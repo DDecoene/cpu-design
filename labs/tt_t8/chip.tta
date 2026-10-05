@@ -1,0 +1,10 @@
+; FILE: tt_t8/chip.tta
+; Het programma in de chip: de rij van Fibonacci (modulo 256) op de uitgangspennen, een getal per zes klokcycli.
+        #0 -> R0            ; a
+        #1 -> R1            ; b
+lus:    R0 -> OUT           ; toon a
+        R0 -> OP
+        R1 -> ADD           ; a + b
+        R1 -> R0            ; a = b
+        RES -> R1           ; b = a + b
+        JMP lus

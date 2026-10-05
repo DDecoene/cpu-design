@@ -1,0 +1,22 @@
+; FILE: tta/array.tta
+; Som van een rij van 8 bytes in het datageheugen, daarna een schrijf/lees-test. Uitvoer: 36, 99.
+        .data 16, 1, 2, 3, 4, 5, 6, 7, 8
+        #0  -> R0           ; som
+        #16 -> R1           ; wijzer
+        #8  -> R2           ; teller
+lus:    R1  -> MAR          ; adresregister = wijzer
+        R0  -> OP
+        MEM -> ADD          ; som + mem[wijzer]
+        RES -> R0
+        R1  -> OP
+        #1  -> ADD
+        RES -> R1
+        R2  -> OP
+        #1  -> SUB
+        RES -> R2
+        ?NZ #lus -> PC
+        R0  -> OUT          ; 36
+        #40 -> MAR
+        #99 -> MEM          ; mem[40] = 99
+        MEM -> OUT          ; 99
+        HALT

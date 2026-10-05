@@ -1,0 +1,11 @@
+; FILE: tta/call.tta
+; Een subroutine die R0 verdubbelt, twee keer aangeroepen. Uitvoer: 28.
+        #7 -> R0
+        CALL dubbel         ; PC2 -> R3, #dubbel -> PC
+        CALL dubbel
+        R0 -> OUT
+        HALT
+dubbel: R0  -> OP
+        R0  -> ADD
+        RES -> R0
+        RET                 ; R3 -> PC

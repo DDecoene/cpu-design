@@ -1,0 +1,11 @@
+; FILE: tta/add16.tta
+; 16-bit optelling met ADC: 0x01FF + 0x0001 = 0x0200. Uitvoer: 0x00 dan 0x02.
+        #0xFF -> R0         ; eerste getal, laag
+        #0x01 -> R2         ; eerste getal, hoog
+        R0  -> OP
+        #1  -> ADD          ; laag + laag, zet de carry
+        RES -> OUT          ; 0x00
+        R2  -> OP
+        #0  -> ADC          ; hoog + 0 + carry
+        RES -> OUT          ; 0x02
+        HALT

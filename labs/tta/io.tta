@@ -1,0 +1,6 @@
+; FILE: tta/io.tta
+; Lees de ingangspoort, tel er 1 bij op en schrijf het naar de uitgangspoort.
+        IN  -> OP
+        #1  -> ADD
+        RES -> OUT
+        HALT

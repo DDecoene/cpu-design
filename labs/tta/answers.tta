@@ -1,0 +1,26 @@
+; FILE: tta/answers.tta
+; Uitwerkingen van de oefeningen. Uitvoer: 200 9 250 91.
+        ; maximum van twee getallen met een guard
+        #200 -> R0
+        #100 -> R1
+        R0  -> OP
+        R1  -> SUB          ; R0 - R1: C = 1 als R0 >= R1
+        ?NC R1 -> R0        ; was R0 kleiner? dan R0 = R1
+        R0  -> OUT          ; 200
+        #5  -> R0
+        #9  -> R1
+        R0  -> OP
+        R1  -> SUB
+        ?NC R1 -> R0
+        R0  -> OUT          ; 9
+        ; negatie: 0 - 6
+        #6  -> R2
+        #0  -> OP
+        R2  -> SUB
+        RES -> OUT          ; 250 (= -6 in 8 bit)
+        ; een plaats naar rechts schuiven met de afgeleide bron RESHR
+        #0xB6 -> R2
+        R2  -> OP
+        #0  -> ADD          ; RES = R2
+        RESHR -> OUT        ; 0x5B = 91
+        HALT

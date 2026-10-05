@@ -1,0 +1,17 @@
+; FILE: tta/guards.tta
+; Test van alle guards. Uitvoer: 1 3 6 7 8 9 4.
+        #5 -> OP
+        #5 -> SUB           ; 5 - 5 = 0: Z=1, C=1 (geen lening), N=0
+        ?Z  #1 -> OUT       ; wel
+        ?NZ #2 -> OUT       ; niet
+        ?C  #3 -> OUT       ; wel
+        ?NC #4 -> OUT       ; niet
+        ?N  #5 -> OUT       ; niet
+        ?NN #6 -> OUT       ; wel
+        #3 -> SUB           ; 5 - 3 = 2: Z=0, C=1, N=0
+        ?NZ #7 -> OUT       ; wel
+        #9 -> SUB           ; 5 - 9 = 0xFC: Z=0, C=0 (lening), N=1
+        ?NC #8 -> OUT       ; wel
+        ?N  #9 -> OUT       ; wel
+        FLAGS -> OUT        ; N C Z = 1 0 0 = 4
+        HALT

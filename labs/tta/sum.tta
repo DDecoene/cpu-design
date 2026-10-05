@@ -1,0 +1,13 @@
+; FILE: tta/sum.tta
+; Som van 1 tot 10 met alleen moves. Uitvoer: 55.
+        #0  -> R0           ; som
+        #10 -> R1           ; teller
+lus:    R0  -> OP
+        R1  -> ADD          ; som + teller
+        RES -> R0
+        R1  -> OP
+        #1  -> SUB          ; teller - 1, zet de Z-vlag
+        RES -> R1
+        ?NZ #lus -> PC      ; terug als het niet nul is
+        R0  -> OUT
+        HALT

@@ -1,0 +1,13 @@
+# gegenereerd door build.sh en de testscripts
+build/
+*.vvp
+*.vcd
+__pycache__/
+*.pyc
+.DS_Store
+
+# schrijfgereedschap (sjablonen waaruit src/ is opgebouwd); niet nodig om de cursus te lezen of te bouwen
+dev/
+
+# de PDF's worden bij een release gebouwd en staan niet in de repo
+pdf/

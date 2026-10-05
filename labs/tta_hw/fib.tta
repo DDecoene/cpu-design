@@ -1,0 +1,15 @@
+; FILE: tta/fib.tta
+; De eerste tien Fibonacci-getallen naar de uitvoer: 0 1 1 2 3 5 8 13 21 34.
+        #0  -> R0           ; a
+        #1  -> R1           ; b
+        #10 -> R2           ; teller
+lus:    R0  -> OUT
+        R0  -> OP
+        R1  -> ADD          ; a + b
+        R1  -> R0           ; a = b
+        RES -> R1           ; b = a + b
+        R2  -> OP
+        #1  -> SUB
+        RES -> R2
+        ?NZ #lus -> PC
+        HALT

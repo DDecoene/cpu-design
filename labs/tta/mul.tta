@@ -1,0 +1,14 @@
+; FILE: tta/mul.tta
+; 13 x 11 door herhaald optellen. Uitvoer: 143.
+        #0  -> R0           ; resultaat
+        #11 -> R1           ; teller
+        #13 -> R2           ; vermenigvuldigtal
+lus:    R0  -> OP
+        R2  -> ADD
+        RES -> R0
+        R1  -> OP
+        #1  -> SUB
+        RES -> R1
+        ?NZ #lus -> PC
+        R0  -> OUT
+        HALT
