@@ -520,7 +520,7 @@ De opdracht: maak iets dat je in deze cursus niet gebouwd hebt, test het zoals e
 | 2 | W8 met cache: de data-cache uit week 21 aan de CPU koppelen, met een meting van de versnelling | geheugenhiërarchie |
 | 3 | De 74HC-print afmaken: schema in KiCad, controle tegen `t8_board.v`, bestelling en bouw | hardware realiseren |
 | 4 | Een Forth-systeem voor S8: een interactieve interpreter met UART, woordenboek en compile-modus | software op eigen hardware |
-| 5 | W8 op een FPGA met VGA of LED-matrix: een klein spel of animatie | systeemontwerp |
+| 5 | W8 op een FPGA met VGA of LED-matrix: een klein spel of animatie (de bouwstenen staan in week 27 tot 30) | systeemontwerp |
 | 6 | De T8-chip in Tiny Tapeout: het hele ontwerp, de testbenches en de documentatie klaarmaken voor inzending | silicium |
 | 7 | Bit-serial CPU: een CPU die 1 bit tegelijk rekent, met minimale hardware | een nieuwe architectuur |
 | 8 | Een eigen ISA (met assembler, simulator en CPU) voor een toepassing naar keuze | volledig ontwerp |
@@ -659,3 +659,5 @@ Veel plezier met je eigen projecten.
 ---
 
 > **Cursus voltooid.** Je bent zes maanden bezig geweest met CPU-ontwerp, van de wet van Ohm tot een chipontwerp. Bewaar je logboek, je labs en je eindopdracht. Ze zijn je portfolio.
+
+Wil je nog een project? Fase 7 (week 27 tot 30) bouwt een computer die een beeld van een SD-kaart op een VGA-monitor zet, met de CPU uit week 24 en een FPGA. Het begint met week 27.

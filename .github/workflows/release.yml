@@ -38,7 +38,7 @@ jobs:
         env:
           CHROME_FLAGS: --no-sandbox
       - name: Controleer dat alle PDF's er zijn
-        run: test "$(ls pdf/*.pdf | wc -l)" -eq 28
+        run: test "$(ls pdf/*.pdf | wc -l)" -eq 32
       - name: Maak een zip
         run: cd pdf && zip ../cpu-design-pdf.zip *.pdf
       - name: Maak de release
@@ -47,4 +47,4 @@ jobs:
         run: |
           gh release create "${{ github.ref_name }}" pdf/*.pdf cpu-design-pdf.zip \
             --title "${{ github.ref_name }}" \
-            --notes "PDF's van de cursus (syllabus, 26 weken en bijlagen), gebouwd uit de bronbestanden in deze tag."
+            --notes "PDF's van de cursus (syllabus, 30 weken en bijlagen), gebouwd uit de bronbestanden in deze tag."

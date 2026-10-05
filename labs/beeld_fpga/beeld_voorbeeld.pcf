@@ -1,0 +1,27 @@
+# FILE: beeld_fpga/beeld_voorbeeld.pcf
+# Voorbeeld van een pinbestand voor nextpnr (iCE40). Kopieer naar beeld.pcf en vul de pinnen in uit het schema van je bord
+# en de handleidingen van je VGA- en microSD-module. De getallen ontbreken met opzet: ik heb geen van deze borden gebruikt.
+# Gebruik:  PCF=beeld.pcf bash flow.sh
+set_io clk12      ??        # klokingang van het bord (12 MHz)
+set_io btn_n      ??        # resetknop
+set_io vga_r[0]   ??        # VGA-module: vier bits per kleur, hs en vs
+set_io vga_r[1]   ??
+set_io vga_r[2]   ??
+set_io vga_r[3]   ??
+set_io vga_g[0]   ??
+set_io vga_g[1]   ??
+set_io vga_g[2]   ??
+set_io vga_g[3]   ??
+set_io vga_b[0]   ??
+set_io vga_b[1]   ??
+set_io vga_b[2]   ??
+set_io vga_b[3]   ??
+set_io vga_hs     ??
+set_io vga_vs     ??
+set_io sd_sck     ??        # microSD-module in SPI-modus: SCK, MOSI, MISO en CS
+set_io sd_mosi    ??
+set_io sd_miso    ??
+set_io sd_cs      ??
+set_io led[0]     ??        # statusled's: sluit aan wat je bord heeft
+set_io uart_tx    ??
+set_io uart_rx    ??
