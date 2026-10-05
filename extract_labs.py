@@ -65,6 +65,7 @@ for d in sorted(p for p in labs.iterdir() if p.is_dir()):
     srcs = [f for f in d.glob("*.v") if not f.name.startswith("tb_")]
     for tb in sorted(d.glob("tb_*.v")):
         exe = root / "build" / f"{d.name}_{tb.stem}.vvp"
+        exe.parent.mkdir(exist_ok=True)
         c = subprocess.run(["iverilog", "-g2012", "-I", str(d), "-o", str(exe), str(tb), *map(str, srcs)],
                            capture_output=True, text=True, cwd=d)
         if c.returncode:
