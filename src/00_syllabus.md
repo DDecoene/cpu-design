@@ -122,7 +122,7 @@ Prijzen zijn schattingen en kunnen verschillen. Controleer actuele prijzen en de
 ## De mappenstructuur
 
 ```
-cpu-design/
+cpu-design-cursus/
 ├── pdf/              ← de PDF's: syllabus, 30 weken en de bijlagen
 ├── src/              ← de bronbestanden (Markdown)
 ├── labs/             ← de werkende code, per week of per project
