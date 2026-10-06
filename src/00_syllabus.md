@@ -1,5 +1,5 @@
 ---
-title: "CPU Design: van nul tot chipbouwer"
+title: "CPU Design Cursus: van nul tot chipbouwer"
 ---
 
 <p class="subtitle">Een cursus van 26 weken plus een vervolgproject van 4 weken, voor beginners zonder voorkennis · hobbyistenbudget</p>

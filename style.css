@@ -1,5 +1,5 @@
 @page { size: A4; margin: 22mm 20mm 24mm 20mm;
-  @bottom-center { content: "CPU Design — pagina " counter(page); font: 9pt sans-serif; color: #888; } }
+  @bottom-center { content: "CPU Design Cursus — pagina " counter(page); font: 9pt sans-serif; color: #888; } }
 html { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; font-size: 10.5pt; line-height: 1.5; color: #1d1d1f; }
 body { max-width: none; margin: 0; padding: 0; }
 h1 { font-size: 24pt; color: #0b3d91; border-bottom: 3px solid #0b3d91; padding-bottom: 6px; margin-top: 0; }

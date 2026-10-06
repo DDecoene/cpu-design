@@ -1,4 +1,4 @@
-# CPU Design: van nul tot chipbouwer
+# CPU Design Cursus: van nul tot chipbouwer
 
 Een Nederlandstalige zelfstudiecursus over digitale elektronica en CPU-ontwerp, verdeeld over 26 weken, plus een vervolgproject van vier weken.
 De stof loopt van spanning, stroom en weerstand via logische poorten en Verilog naar een eigen 8-bit CPU,
