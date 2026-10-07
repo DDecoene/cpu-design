@@ -1,0 +1,156 @@
+; boot.asm (W8F, fase 7) letterlijk vertaald naar de T8 van week 19, om de moves te tellen.
+; Aanname: de apparaten zitten zoals bij W8F op F0-FF en zijn bereikbaar via MAR/MEM.
+; R3 = link (CALL-macro), R0 = byte voor/na SPI, R1/R2 = tellers en wijzer. Geheugen: 0x30 = terugkeeradres van cmd, 0x31 = blokteller.
+        .equ GPIO, 0xF5
+        .equ FBDATA, 0xFA
+        .equ SPIDATA, 0xFC
+        .equ SPICTRL, 0xFD
+        .equ SPISTAT, 0xFE
+        .equ SAVE, 0x30
+        .equ NBLK, 0x31
+        .data 0x10, 0x40, 0x00, 0x00, 0x00, 0x00, 0x95
+        .data 0x16, 0x48, 0x00, 0x00, 0x01, 0xAA, 0x87
+        .data 0x1C, 0x77, 0x00, 0x00, 0x00, 0x00, 0x01
+        .data 0x22, 0x69, 0x40, 0x00, 0x00, 0x00, 0x01
+        .data 0x28, 0x51, 0x00, 0x00, 0x00, 0x00, 0x01
+
+start:  #GPIO -> MAR
+        #1 -> MEM
+        #SPICTRL -> MAR
+        #1 -> MEM
+        #10 -> R1
+init:   #0xFF -> R0
+        CALL xfer
+        R1 -> OP
+        #1 -> SUB
+        RES -> R1
+        ?NZ #init -> PC
+        #SPICTRL -> MAR
+        #0 -> MEM
+
+        #0x10 -> R2
+        CALL cmd                ; CMD0
+        R0 -> OP
+        #1 -> SUB
+        ?NZ #fout -> PC
+        #GPIO -> MAR
+        #2 -> MEM
+
+        #0x16 -> R2
+        CALL cmd                ; CMD8
+        R0 -> OP
+        #1 -> SUB
+        ?NZ #fout -> PC
+        #4 -> R1
+r7:     #0xFF -> R0
+        CALL xfer
+        R1 -> OP
+        #1 -> SUB
+        RES -> R1
+        ?NZ #r7 -> PC
+        #GPIO -> MAR
+        #3 -> MEM
+
+opstart: #0x1C -> R2
+        CALL cmd                ; CMD55
+        #0x22 -> R2
+        CALL cmd                ; ACMD41
+        R0 -> OP
+        #0 -> OR
+        ?NZ #opstart -> PC
+        #GPIO -> MAR
+        #4 -> MEM
+        #SPICTRL -> MAR
+        #2 -> MEM
+
+        #GPIO -> MAR
+        #5 -> MEM
+        #NBLK -> MAR
+        #19 -> MEM
+blok:   #0x28 -> R2
+        CALL cmd                ; CMD17
+        R0 -> OP
+        #0 -> OR
+        ?NZ #fout -> PC
+token:  #0xFF -> R0
+        CALL xfer
+        R0 -> OP
+        #0xFE -> SUB
+        ?NZ #token -> PC
+        #2 -> R2
+ronde:  #0 -> R1
+data:   #0xFF -> R0
+        CALL xfer
+        #FBDATA -> MAR
+        R0 -> MEM
+        R1 -> OP
+        #1 -> SUB
+        RES -> R1
+        ?NZ #data -> PC
+        R2 -> OP
+        #1 -> SUB
+        RES -> R2
+        ?NZ #ronde -> PC
+        #0xFF -> R0
+        CALL xfer
+        #0xFF -> R0
+        CALL xfer
+        #0x2C -> MAR
+        MEM -> OP
+        #1 -> ADD
+        RES -> MEM
+        #NBLK -> MAR
+        MEM -> OP
+        #1 -> SUB
+        RES -> MEM
+        ?NZ #blok -> PC
+
+        #SPICTRL -> MAR
+        #3 -> MEM
+        #0xFF -> R0
+        CALL xfer
+        #GPIO -> MAR
+        #0x10 -> MEM
+        HALT
+
+fout:   #GPIO -> MAR
+        MEM -> OP
+        #0x80 -> OR
+        RES -> MEM
+        HALT
+
+xfer:   #SPIDATA -> MAR
+        R0 -> MEM
+        #SPISTAT -> MAR
+xwacht: MEM -> OP
+        #1 -> AND
+        ?NZ #xwacht -> PC
+        #SPIDATA -> MAR
+        MEM -> R0
+        RET
+
+cmd:    #SAVE -> MAR
+        R3 -> MEM
+        #6 -> R1
+cbyte:  R2 -> MAR
+        MEM -> R0
+        CALL xfer
+        R2 -> OP
+        #1 -> ADD
+        RES -> R2
+        R1 -> OP
+        #1 -> SUB
+        RES -> R1
+        ?NZ #cbyte -> PC
+        #16 -> R1
+cantw:  #0xFF -> R0
+        CALL xfer
+        R0 -> OP
+        #0x80 -> AND
+        ?Z #cklaar -> PC
+        R1 -> OP
+        #1 -> SUB
+        RES -> R1
+        ?NZ #cantw -> PC
+cklaar: #SAVE -> MAR
+        MEM -> PC
