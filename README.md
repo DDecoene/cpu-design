@@ -31,8 +31,15 @@ De bijlagen bevatten een Verilog-spiekbrief, de instructiesets, een chiplijst, f
 | `labs/` | de code uit de hoofdstukken, per week of per project |
 | `extract_labs.py` | haalt de code uit `src/` en draait alle tests |
 | `build.sh` | bouwt de PDF's opnieuw |
+| `.devcontainer/` | een werkomgeving met alle tools (Codespaces of VS Code) |
 
 De PDF's staan niet in de repo maar bij de [Releases](../../releases): `00_syllabus.pdf`, `week01.pdf` t/m `week30.pdf` en `99_bijlagen.pdf`, ook als een zip. Begin met de syllabus: die beschrijft de werkwijze en welke software en onderdelen je nodig hebt. Wil je liever zelf bouwen, zie hieronder.
+
+## Werkomgeving in een container
+
+De map `.devcontainer/` beschrijft een kant-en-klare omgeving. Open de repo in GitHub Codespaces of in VS Code met de Dev Containers-extensie ("Reopen in Container"). Daarin staan Icarus Verilog, Python, Yosys en nextpnr (als YoWASP in `~/fpga-venv`, zoals week 23 beschrijft), pandoc en Chromium klaar, plus de VS Code-extensies voor Verilog en Surfer (golfvormen). Bij het aanmaken draait de container meteen `extract_labs.py`.
+
+KiCad (week 25) en het programmeren van een echt FPGA-bord zitten er niet in: daarvoor heb je je eigen computer nodig.
 
 ## De code testen
 
