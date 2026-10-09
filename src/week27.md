@@ -208,7 +208,7 @@ In de praktijk koop je een VGA-module die dit al doet. Er bestaan Pmod-modules m
 
 ## 9. Lab
 
-1. Draai de tests van fase 7: `python3 test_labs.py beeld`. Dit draait ook de tests van de volgende weken, dus het duurt een halve minuut tot een minuut. De regels met `PASS` van `tb_vga_sync`, `tb_vga_testbeeld` en `test_ppm2png` horen bij deze week.
+1. Draai de tests van fase 7: `python3 test_labs.py beeld`. Dit draait ook de tests van de volgende weken, dus het duurt ongeveer een minuut. De regels met `PASS` van `tb_vga_sync`, `tb_vga_testbeeld` en `test_ppm2png` horen bij deze week.
 2. Zet `testbeeld.ppm` om naar PNG en bekijk het. Zie je alle acht balken en de 16 grijstinten?
 3. Verander in `vga_bars.v` de rand: maak hem 2 pixels dik. Welke test faalt en wat moet je in de test aanpassen?
 4. Zet in `vga_sync` de polariteit om (`SYNC_NEG = 0`). Welke tests falen? Wat zou je van een echte monitor verwachten?

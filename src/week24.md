@@ -23,7 +23,7 @@ Aan het eind van week 23 had onze CPU de volgende kenmerken (gemeten met Yosys e
 |---------|-----|
 | LUT4 | 3 202 |
 | Flipflops | 2 148 |
-| Gebruikte logische elementen | 5 297 van 7 680 (68 %) |
+| Gebruikte logische elementen | 5 297 van 7 680 (69 %) |
 | Maximale frequentie | 34,3 MHz |
 
 Dat is veel voor een eenvoudige 8-bit CPU. Een goede ingenieur vraagt zich nu af waar die ruimte naartoe gaat. Het antwoord staat in de details van het rapport.
@@ -82,11 +82,12 @@ Het rapport bevat het pad stap voor stap. De analyse van W8I:
 | clock-to-Q van de eerste flipflop | 0,54 ns |
 | logica: 18 LUT's achter elkaar | 6,12 ns |
 | routering tussen die LUT's | 22,02 ns |
-| totaal | ca. 28,7 ns → 34,8 MHz |
+| setup en overig | ca. 0,5 ns |
+| totaal | ca. 29,2 ns → 34,3 MHz |
 
 Hieruit volgen twee lessen.
 
-1. Op een FPGA is routering de grote speler: 78 % van de tijd. De draden en schakelaars tussen de LUT's zijn veel langzamer dan de LUT's zelf. Een ontwerp met minder LUT's op het pad (en minder fanout) is dus sneller, en een kleiner ontwerp is ook korter bedraad.
+1. Op een FPGA is routering de grote speler: ruim driekwart van de tijd. De draden en schakelaars tussen de LUT's zijn veel langzamer dan de LUT's zelf. Een ontwerp met minder LUT's op het pad (en minder fanout) is dus sneller, en een kleiner ontwerp is ook korter bedraad.
 2. Het pad is 18 LUT's diep. De weg loopt van de toestand van de besturing via het registerbestand (de multiplexer die `regb` kiest) en de ALU naar de vlaggen. Het is hetzelfde kritieke pad dat we in week 14 op papier vonden: registers lezen, ALU, terugschrijven. Pipelining (week 20) knipt het in stukken.
 
 ## 3. De oplossing: W8F
@@ -173,7 +174,7 @@ Gemeten met Yosys 0.69 en nextpnr (via YoWASP), `seed 1`, met 27 MHz als doel:
 | LUT4 | 3 202 | 700 |
 | Flipflops | 2 148 | 265 |
 | Blok-RAM | 0 | 1 |
-| Logische elementen op HX8K | 5 297 (68 %) | 898 (11 %) |
+| Logische elementen op HX8K | 5 297 (69 %) | 898 (12 %) |
 | Maximale frequentie HX8K | 34,3 MHz | 48,0 MHz |
 | Kritiek pad: logica / routering | 6,1 / 22,0 ns | 5,5 / 14,7 ns |
 | Past op UP5K (5 280 LC's) | nee | ja, maximaal 18,4 MHz |
@@ -267,7 +268,7 @@ Hierin is α de fractie poorten die per klokperiode schakelt, C de capaciteit di
 
 ## 9. Oefeningen
 
-1. Het datageheugen van W8I heeft 240 bytes. Hoeveel flipflops kost dat? Waarom kost het daarnaast nog tientallen LUT's per bit?
+1. Het datageheugen van W8I heeft 240 bytes. Hoeveel flipflops kost dat? Waarom kost het daarnaast nog honderden LUT's per bit?
 2. Een programma voert 10 000 instructies uit, waarvan 20 % `LD`, op W8I (34 MHz, 2 cycli per instructie) en op W8F (48 MHz, 3 cycli voor `LD`). Bereken de tijd op beide en de versnelling.
 3. Een kritiek pad bestaat uit 0,5 ns clock-to-Q, 12 LUT's van 0,4 ns en 12 routeringen van 1,2 ns. Wat is de maximale frequentie? Wat levert het halveren van het aantal LUT's (en routeringen) op het pad op?
 4. Leg uit waarom een asynchroon geheugen niet op blok-RAM past.
@@ -278,7 +279,7 @@ Hierin is α de fractie poorten die per klokperiode schakelt, C de capaciteit di
 
 ## 10. Antwoorden
 
-1. 240 × 8 = 1 920 flipflops. Daarnaast heeft elke uitgangsbit een multiplexer van 240 naar 1 (grofweg 150 LUT's per bit), plus een decodering van het adres voor het schrijven. Samen geeft dat de gemeten ongeveer 2 500 LUT's bovenop de flipflops.
+1. 240 × 8 = 1 920 flipflops. Daarnaast heeft elke uitgangsbit een multiplexer van 240 naar 1. Een 2-naar-1-multiplexer past in één LUT, dus zo'n keuzeboom kost grofweg een LUT per ingang: ongeveer 240 per bit, samen ruim 1 900. Daarbij komt de decodering van het adres voor het schrijven. Samen geeft dat de gemeten ongeveer 2 500 LUT's bovenop de flipflops.
 2. Instructies: 20 % LD = 2 000, de overige 8 000. W8I: 10 000 × 2 = 20 000 cycli / 34,3 MHz = 583 µs. W8F: 8 000 × 2 + 2 000 × 3 = 22 000 cycli / 48 MHz = 458 µs. De versnelling is 583 / 458 ≈ 1,27.
 3. Het totaal is 0,5 + 12 × 0,4 + 12 × 1,2 = 0,5 + 4,8 + 14,4 = 19,7 ns, dus ongeveer 50,8 MHz. Met 6 LUT's en 6 routeringen: 0,5 + 2,4 + 7,2 = 10,1 ns, ongeveer 99 MHz, bijna het dubbele.
 4. Het blok-RAM legt het adres vast bij een klokflank en levert de data via een register aan de uitgang. Asynchroon lezen verlangt dat de data zonder klok verschijnt. De hardware kan dat niet, dus bouwt de tool het uit flipflops en multiplexers.

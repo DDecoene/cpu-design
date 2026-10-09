@@ -224,6 +224,6 @@ Antwoorden: (1) V = I × R. (2) De stroom halveert. (3) Een LED begrenst zijn st
 
 - *Make: Electronics* van Charles Platt, hoofdstuk 1 tot 3. Toegankelijk en vol proefjes.
 - De uitleg over de wet van Ohm bij Khan Academy (zoek op "Ohm's law").
-- Zoek het datablad van de 74HC04 op en kijk waar "VIH" en "VIL" staan. Volgende week komen we erop terug.
+- Zoek het datablad van de 74HC04 op en kijk waar "VIH" en "VIL" staan. Volgende week gebruik je die chip.
 
 Volgende week bouwen we de logische poort, en daarvoor kijken we eerst naar de transistor.

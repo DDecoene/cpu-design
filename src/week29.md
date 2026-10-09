@@ -102,7 +102,7 @@ Chip select is een bit dat de software zet en niet een deel van de overdracht. D
 
 ## 4. Nog een laagje
 
-Net als vorige week leggen we er een laagje omheen in plaats van `mmio_v` te veranderen. `mmio_b` bevat een `mmio_v` en een `spi_io`, en kijkt naar de bovenste zes adresbits: `111111` is `0xFC` tot en met `0xFF`, en alles daaronder gaat naar `mmio_v`. De CPU is daarmee een derde keer uitgebreid zonder dat het origineel is aangeraakt, en `cpu_b` ontstaat op dezelfde manier uit `cpu_v` als `cpu_v` uit `cpu_f`.
+Net als vorige week leggen we er een laagje omheen in plaats van `mmio_v` te veranderen. `mmio_b` bevat een `mmio_v` en een `spi_io`, en kijkt naar de bovenste zes adresbits: `111111` is `0xFC` tot en met `0xFF`, en alles daaronder gaat naar `mmio_v`. De CPU is daarmee voor de tweede keer uitgebreid zonder dat het origineel is aangeraakt, en `cpu_b` ontstaat op dezelfde manier uit `cpu_v` als `cpu_v` uit `cpu_f`.
 
 ```{.verilog include="beeld/mmio_b.v"}
 ```

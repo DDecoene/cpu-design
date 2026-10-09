@@ -221,7 +221,7 @@ Je ziet `PASS`. Een test is pas nuttig als je hem ook ziet falen. Verander in `i
 1. Decodeer `0x0A5B`: welke instructie is dit?
 2. Codeer `SUB R6, R2, R4` met de hand, in binair en in hex.
 3. Decodeer `0x5A14`.
-4. Decodeer `0x3C85`, `0x4E41` en `0x7F80`.
+4. Decodeer `0x3C85`, `0x4E41` en `0x7E80`.
 5. Hoeveel verschillende 16-bit woorden zijn een geldige ALU-instructie (opcode 0)? En hoeveel daarvan zijn `ADD`?
 6. Schrijf een programma dat in R3 het maximum van R1 en R2 zet (zonder teken). Codeer het met de hand.
 7. Schrijf een programma dat telt hoeveel bits van R1 gelijk zijn aan 1 en het aantal in R2 zet. Hint: schuif R1 naar rechts en kijk naar de carry.
@@ -233,12 +233,12 @@ Je ziet `PASS`. Een test is pas nuttig als je hem ook ziet falen. Verander in `i
 1. `0x0A5B` = `0000 101 001 011 011`: opcode 0, rd = 5, rs1 = 1, rs2 = 3, fn = 3 (OR). Het is dus `OR R5, R1, R3`.
 2. Opcode 0000, rd = 6 (110), rs1 = 2 (010), rs2 = 4 (100), fn = 1 (001): `0000 110 010 100 001` = 0x0CA1.
 3. `0x5A14` = `0101 101 0 00010100`: opcode 5 (Bcc), cond = 5 (BLT), adres = 0x14 = 20. Het is dus `BLT 20`.
-4. `0x3C85` is `LD R6, [R2+5]`. `0x4E41` is `ST R7, [R1+1]`. `0x7F80` is `CMPI R7, 0x80`.
+4. `0x3C85` is `LD R6, [R2+5]`. `0x4E41` is `ST R7, [R1+1]`. `0x7E80` is `CMPI R7, 0x80`.
 5. De opcode ligt vast op 0 en de overige 12 bits zijn vrij: 2¹² = 4096 woorden (sommige gedragen zich gelijk, bijvoorbeeld NOT negeert rs2). Daarvan zijn er voor `ADD` (fn = 0) 8 × 8 × 8 = 512.
 6. Een mogelijke oplossing (adres, assembly, hex): `0: CMP R1,R2` (6050), `1: BCS 4` (5604), `2: MOV R3,R2` (0693), `3: B 5` (5005), `4: MOV R3,R1` (064B), `5: HALT` (F000). `BCS` springt als R1 ≥ R2 (zonder teken).
 7. Het idee: zet R2 op 0 en herhaal 8 keer: `SHR R1, R1` (de carry bevat het uitgeschoven bit), en als C = 1 dan `ADDI R2, 1`. Gebruik een teller in een ander register voor de 8 herhalingen. In week 17 schrijf je dit met de assembler.
 8. Je hebt 12 bits voor de programmateller nodig. In `Bcc` en `CALL` is maar plaats voor 8 bits adres. Je kunt het formaat verbreden (instructies van 20 of 24 bit), relatieve sprongen gebruiken (PC + offset) of een register gebruiken voor het hoge deel van het adres. Dit is precies de afweging die ontwerpers van echte ISA's maken.
-9. Je hebt een stackpointer nodig (een register, bijvoorbeeld R6 als afspraak). `PUSH` schrijft `rd` naar `data[SP]` en verlaagt SP. `POP` verhoogt SP en leest. Je gebruikt twee vrije opcodes (B en C) en hebt hardware nodig om SP in dezelfde instructie bij te werken (een extra schrijfpoort of een tweede cyclus). Het kan ook in software met `ST` en `ADDI` als twee aparte instructies.
+9. Je hebt een stackpointer nodig (een register, bijvoorbeeld R6 als afspraak). `PUSH` schrijft `rd` naar `data[SP]` en verlaagt SP. `POP` verhoogt SP en leest. Er is maar één vrije opcode (E; B, C en D zijn voor week 22) en de week-15-oefening `SKIP` gebruikt die ook al, dus je moet twee varianten onder één opcode zetten, bijvoorbeeld met het `rd`-veld als subcode. Je hebt hardware nodig om SP in dezelfde instructie bij te werken (een extra schrijfpoort of een tweede cyclus). Het kan ook in software met `ST` en `ADDI` als twee aparte instructies.
 
 ## 8. Zelftest
 

@@ -142,7 +142,7 @@ Hulproutines:
 
 `cmd` roept zelf `xfer` aan, en `CALL` bewaart het terugkeeradres in `R7`. De tweede `CALL` zou `R7` dus overschrijven. Daarom kopieert `cmd` `R7` eerst naar `R5` en keert het terug met `JR R5`. Dit is een kleine versie van wat een compiler met een stapel doet.
 
-De LED's (GPIO) tonen waar het programma is: 1 tot 5 voor de stappen, `0x10` als alles klaar is, en bit 7 erbij als er iets misgaat. Zo kun je met een bord zonder scherm toch zien waar het mis ging.
+De LED's (GPIO) tonen waar het programma is: 1 = klokpulsen en CMD0 bezig, 2 = CMD0 gelukt, 3 = CMD8 gelukt, 4 = kaart klaar, 5 = bezig met lezen, `0x10` als alles klaar is, en bit 7 erbij als er iets misgaat. Die LED-nummers tellen dus anders dan de lijst in paragraaf 1. Zo kun je met een bord zonder scherm toch zien waar het mis ging.
 
 ```{.text include="beeld/boot.asm"}
 ```
@@ -188,7 +188,7 @@ Voor deze week zijn twee proeven gedaan.
 
 | Fout | Wat de tests zeggen |
 |------|---------------------|
-| het kaartmodel wacht 17 bytes (`NCR = 17`) voor hij antwoordt, meer dan het programma wil afwachten | `tb_beeld_top`: LED's `10000001`, dus stap 1, fout: CMD0 kreeg geen antwoord. (De specificatie staat hoogstens 8 toe; het programma geeft er 16.) |
+| het kaartmodel wacht 17 bytes (`NCR = 17`) voor hij antwoordt, meer dan het programma wil afwachten | `tb_beeld_top`: LED's `10000001`, dus LED-code 1 met de foutbit: CMD0 kreeg geen antwoord. (De specificatie staat hoogstens 8 toe; het programma geeft er 16.) |
 | de master leest MISO op de verkeerde flank (week 29) | al `tb_spi` faalt, lang voor deze test |
 
 ## 7. Naar de FPGA
@@ -293,7 +293,7 @@ Alleen de derde stap is wat je een 3D-processor zou noemen, en ze is veel groter
 6. Een seconde is ongeveer 12 miljoen klokken. Een poging van 2 x 14 bytes in de langzame stand kost 28 x 8 x 32 = 7 168 klokken (bijna alleen SPI-tijd), dus ongeveer 1 700 pogingen. Dat past niet in een 8-bit teller (255): je hebt twee registers nodig die als een 16-bit teller werken, of een buitenste lus van 7 rondes om een binnenste van 250. De registers `R4` en `R6` zijn na `acmd` vrij.
 7. Het datageheugen werkt ook (`ST`, `LD`), maar kost twee instructies en een adresregister, en je moet er een vaste plek voor reserveren. Een vrij register kost één `MOV` en één `JR`. Het is wel een aanpak die niet meer werkt als je dieper wilt nesten: dan moet je een stapel gebruiken.
 8. Plaatsen en routeren begint met een willekeurige plaatsing en verbetert die. Een andere seed geeft een andere plaatsing en dus een iets andere maximale frequentie. Gebruik de laagste waarde van meerdere seeds en reken daarmee. Dat het verschil klein is, is een goed teken: het ontwerp zit niet op de rand.
-9. `0x82` is stap 2 met de foutbit: CMD0 lukte en CMD8 niet, wat meestal een kaart van SD 1.x is. `0x03` dat blijft staan is stap 3: de ACMD41-lus is nog bezig, en de kaart meldt steeds 'idle'.
+9. `0x82` is LED-code 2 met de foutbit: CMD0 lukte en CMD8 niet, wat meestal een kaart van SD 1.x is. `0x03` dat blijft staan is LED-code 3: de ACMD41-lus is nog bezig, en de kaart meldt steeds 'idle'.
 10. De CPU rekent op 8 bit, een FAT-bestandssysteem op 16 en 32 bit (clusternummers, bestandsgroottes), dus elke berekening kost meerdere instructies met een carry. Daarbij moet je de directory doorzoeken en de FAT volgen. Het is te doen maar zou meer dan de 155 vrije instructies kosten. Met een uitgebreide ISA of een soft-CPU met 16 bit is het eenvoudiger.
 11. Dit is een open opdracht. Denk aan: beginadres (2 registers), breedte, hoogte en kleur; een toestandsmachine die rij voor rij byte voor byte schrijft; en een arbiter die beslist wie het framebuffer mag schrijven als de CPU en de blitter tegelijk willen.
 

@@ -82,7 +82,7 @@ Zo dupliceert `DUP ( a -- a a )` het bovenste getal en telt `+ ( a b -- som )` t
 Met `:` en `;` maak je een nieuw woord. Dat werkt daarna net zo als de ingebouwde woorden:
 
 ```text
-: kwadraat ( n -- n*n )  DUP mul ;
+: dubbel ( n -- 2n )  DUP + ;
 ```
 
 Je bouwt een programma op door steeds grotere woorden uit kleinere te maken. Het laatste woord is het hele programma.

@@ -45,7 +45,7 @@ Bij `en = 1` gaat `d` de flipflop in. Anders loopt zijn eigen uitgang `q` terug 
 |------|-----------|
 | 74HC273 | 8 flipflops met gemeenschappelijke clear, zonder enable |
 | 74HC377 | 8 flipflops met load-enable |
-| 74HC574 | 8 flipflops met tri-state uitgang (OE), de basis van Ben Eaters registers |
+| 74HC574 | 8 flipflops met tri-state uitgang (OE), de standaardbouwsteen voor een register aan een bus |
 
 ## 2. Het shiftregister
 
