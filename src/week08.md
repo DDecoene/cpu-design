@@ -57,52 +57,12 @@ Een geheugen reageert niet direct. Na een adresverandering duurt het even voorda
 
 ## 2. Geheugen in Verilog
 
-```verilog
-// FILE: week08/memory.v
-// Synchroon schrijven, asynchroon (combinatorisch) lezen. Net zoals een eenvoudig SRAM.
-module ram #(parameter AW = 8, parameter DW = 8) (
-  input               clk,
-  input               we,
-  input      [AW-1:0] addr,
-  input      [DW-1:0] din,
-  output     [DW-1:0] dout
-);
-  reg [DW-1:0] mem [0:(1<<AW)-1];
-
-  assign dout = mem[addr];
-
-  always @(posedge clk)
-    if (we) mem[addr] <= din;
-endmodule
-
-// ROM, gevuld vanuit een hex-bestand.
-module rom #(parameter AW = 4, parameter DW = 8, parameter FILE = "prog.hex") (
-  input  [AW-1:0] addr,
-  output [DW-1:0] dout
-);
-  reg [DW-1:0] mem [0:(1<<AW)-1];
-  integer i;
-  initial begin
-    for (i = 0; i < (1<<AW); i = i + 1) mem[i] = {DW{1'b0}};
-    $readmemh(FILE, mem);
-  end
-  assign dout = mem[addr];
-endmodule
+```{.verilog include="week08/memory.v"}
 ```
 
 `reg [7:0] mem [0:255]` is een array van 256 registers van 8 bits. In een FPGA wordt dit automatisch omgezet in ingebouwd blok-RAM. `$readmemh` laadt een hex-bestand met één waarde per woord en `//` voor commentaar.
 
-```text
-// FILE: week08/prog.hex
-// Een ROM-inhoud: de eerste 8 woorden (adres 0..7).
-A1
-4F
-00
-3C
-FF
-10
-20
-5A
+```{.text include="week08/prog.hex"}
 ```
 
 ## 3. Het registerbestand
@@ -120,28 +80,7 @@ Een CPU heeft in de chip zelf een klein, supersnel geheugen: de registers (R0...
 
 Wij houden register 0 hier niet vast op nul. Sommige ontwerpen doen dat wel (RISC-V bijvoorbeeld), en dat bekijken we in week 13.
 
-```verilog
-// FILE: week08/regfile.v
-module regfile #(parameter DW = 8) (
-  input           clk,
-  input           we,
-  input  [2:0]    wa,
-  input  [DW-1:0] wd,
-  input  [2:0]    ra1,
-  input  [2:0]    ra2,
-  output [DW-1:0] rd1,
-  output [DW-1:0] rd2
-);
-  reg [DW-1:0] r [0:7];
-  integer i;
-  initial for (i = 0; i < 8; i = i + 1) r[i] = {DW{1'b0}};
-
-  assign rd1 = r[ra1];
-  assign rd2 = r[ra2];
-
-  always @(posedge clk)
-    if (we) r[wa] <= wd;
-endmodule
+```{.verilog include="week08/regfile.v"}
 ```
 
 ## 4. De bus
@@ -181,100 +120,17 @@ Stuurt niemand de bus aan, dan zweeft hij (Z). Dat is geen conflict, maar de lez
 
 ## 5. Bus in Verilog
 
-```verilog
-// FILE: week08/bus.v
-// Drie bronnen op één bus. Elk zet zijn data alleen op de bus als zijn oe aan staat.
-module bus3(
-  input  [7:0] a, b, c,
-  input        oe_a, oe_b, oe_c,
-  output [7:0] bus
-);
-  assign bus = oe_a ? a : 8'bz;
-  assign bus = oe_b ? b : 8'bz;
-  assign bus = oe_c ? c : 8'bz;
-endmodule
+```{.verilog include="week08/bus.v"}
 ```
 
 Meerdere `assign`-regels op dezelfde `wire` zijn toegestaan: de simulator lost ze op. Z gecombineerd met een waarde geeft die waarde, en twee verschillende waarden geven X (conflict).
 
 ## 6. Tests
 
-```verilog
-// FILE: week08/tb_mem.v
-module tb_mem;
-  reg clk = 0, we = 0;
-  reg  [7:0] addr = 0, din = 0;
-  wire [7:0] dout;
-  wire [7:0] rom_out;
-  reg  [3:0] rom_addr = 0;
-  integer i, fouten = 0;
-
-  ram #(8, 8) r(clk, we, addr, din, dout);
-  rom #(4, 8, "prog.hex") m(rom_addr, rom_out);
-
-  always #5 clk = ~clk;
-
-  initial begin
-    // Schrijf 16 waarden in het RAM en lees ze terug.
-    for (i = 0; i < 16; i = i + 1) begin
-      @(negedge clk); addr = i[7:0]; din = i[7:0] * 8'd3 + 8'd7; we = 1;
-      @(negedge clk); we = 0;
-    end
-    for (i = 0; i < 16; i = i + 1) begin
-      addr = i[7:0]; #1;
-      if (dout !== (i[7:0] * 8'd3 + 8'd7)) begin fouten = fouten + 1; $display("FAIL ram %0d", i); end
-    end
-    // Zonder we verandert er niets.
-    @(negedge clk); addr = 8'd2; din = 8'hEE; we = 0;
-    @(negedge clk); if (dout !== 8'd13) begin fouten = fouten + 1; $display("FAIL: schreef zonder we"); end
-
-    // ROM: de bestandsinhoud komt terug.
-    rom_addr = 0; #1; if (rom_out !== 8'hA1) begin fouten = fouten + 1; $display("FAIL rom 0: %h", rom_out); end
-    rom_addr = 3; #1; if (rom_out !== 8'h3C) begin fouten = fouten + 1; $display("FAIL rom 3: %h", rom_out); end
-    rom_addr = 7; #1; if (rom_out !== 8'h5A) begin fouten = fouten + 1; $display("FAIL rom 7: %h", rom_out); end
-    rom_addr = 12; #1; if (rom_out !== 8'h00) begin fouten = fouten + 1; $display("FAIL rom leeg: %h", rom_out); end
-
-    if (fouten == 0) $display("PASS: RAM en ROM werken");
-    $finish;
-  end
-endmodule
+```{.verilog include="week08/tb_mem.v"}
 ```
 
-```verilog
-// FILE: week08/tb_regfile_bus.v
-module tb_regfile_bus;
-  reg clk = 0, we = 0;
-  reg  [2:0] wa = 0, ra1 = 0, ra2 = 0;
-  reg  [7:0] wd = 0;
-  wire [7:0] rd1, rd2;
-  reg  [7:0] a = 8'h11, b = 8'h22, c = 8'h33;
-  reg        oe_a = 0, oe_b = 0, oe_c = 0;
-  wire [7:0] bus;
-  integer i, fouten = 0;
-
-  regfile #(8) rf(clk, we, wa, wd, ra1, ra2, rd1, rd2);
-  bus3 bs(a, b, c, oe_a, oe_b, oe_c, bus);
-  always #5 clk = ~clk;
-
-  initial begin
-    // Registerbestand: schrijf alle acht, lees er twee tegelijk.
-    for (i = 0; i < 8; i = i + 1) begin
-      @(negedge clk); wa = i[2:0]; wd = 8'h10 + i[7:0]; we = 1;
-    end
-    @(negedge clk); we = 0;
-    ra1 = 3; ra2 = 6; #1;
-    if (rd1 !== 8'h13 || rd2 !== 8'h16) begin fouten = fouten + 1; $display("FAIL regfile: %h %h", rd1, rd2); end
-
-    // Bus: niemand = Z, één = zijn data, twee verschillende = X (conflict).
-    #1; if (bus !== 8'bzzzzzzzz) begin fouten = fouten + 1; $display("FAIL: bus niet Z"); end
-    oe_b = 1; #1; if (bus !== 8'h22) begin fouten = fouten + 1; $display("FAIL: bus b"); end
-    oe_b = 0; oe_c = 1; #1; if (bus !== 8'h33) begin fouten = fouten + 1; $display("FAIL: bus c"); end
-    oe_a = 1; #1; if (^bus !== 1'bx) begin fouten = fouten + 1; $display("FAIL: conflict niet zichtbaar: %b", bus); end
-
-    if (fouten == 0) $display("PASS: registerbestand en bus kloppen, conflict wordt X");
-    $finish;
-  end
-endmodule
+```{.verilog include="week08/tb_regfile_bus.v"}
 ```
 
 Draai ze:

@@ -1,4 +1,3 @@
-// FILE: week08/tb_mem.v
 module tb_mem;
   reg clk = 0, we = 0;
   reg  [7:0] addr = 0, din = 0;

@@ -1,4 +1,3 @@
-# FILE: tt_t8/test_mkrom.py
 # Het gegenereerde ROM moet precies de woorden van het programma bevatten; en het mag niet groter zijn dan het adresbereik.
 import re, subprocess, sys
 from mkrom import maak_rom

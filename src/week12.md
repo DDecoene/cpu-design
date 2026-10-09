@@ -124,90 +124,15 @@ Hoe schuif je 0 tot 7 plaatsen in één klokcyclus? Niet met zeven keer één pl
 
 Voor W bits heb je log₂(W) trappen van W multiplexers. Bij 32 bits zijn dat 5 × 32 = 160 multiplexers en een vertraging van 5 mux-niveaus. Elke shift duurt dus even lang, wat je ook kiest.
 
-```verilog
-// FILE: week12/shifter.v
-// Barrel shifter. mode: 00 LSL, 01 LSR, 10 ASR, 11 ROR.
-module shifter #(parameter W = 8, parameter SW = 3) (
-  input  [W-1:0]  a,
-  input  [SW-1:0] sh,
-  input  [1:0]    mode,
-  output [W-1:0]  y
-);
-  wire [W-1:0] st [0:SW];          // st[k] is het tussenresultaat voor trap k
-  assign st[0] = a;
-
-  genvar k;
-  generate
-    for (k = 0; k < SW; k = k + 1) begin : stage
-      localparam N = 1 << k;       // deze trap schuift N plaatsen
-      wire [W-1:0] x   = st[k];
-      wire [W-1:0] lsl = x << N;
-      wire [W-1:0] lsr = x >> N;
-      wire [W-1:0] asr = $signed(x) >>> N;
-      wire [W-1:0] ror = (x >> N) | (x << (W - N));
-      wire [W-1:0] r   = (mode == 2'b00) ? lsl :
-                         (mode == 2'b01) ? lsr :
-                         (mode == 2'b10) ? asr : ror;
-      assign st[k+1] = sh[k] ? r : x;
-    end
-  endgenerate
-
-  assign y = st[SW];
-endmodule
+```{.verilog include="week12/shifter.v"}
 ```
 
 Een ASR over meerdere trappen werkt: elke trap kopieert het tekenbit opnieuw. Een rotatie over meerdere trappen werkt ook.
 
-```verilog
-// FILE: week12/sext.v
-// Tekenuitbreiding van 8 naar 16 bits.
-module sext8to16(input [7:0] x, output [15:0] y);
-  assign y = {{8{x[7]}}, x};
-endmodule
+```{.verilog include="week12/sext.v"}
 ```
 
-```verilog
-// FILE: week12/tb_shifter.v
-module tb_shifter;
-  reg  [7:0] a;
-  reg  [2:0] sh;
-  reg  [1:0] mode;
-  wire [7:0] y;
-  wire [15:0] ext;
-  integer ia, is, im, fouten = 0, sa;
-  reg [7:0] ey;
-
-  shifter #(8, 3) dut(a, sh, mode, y);
-  sext8to16 se(a, ext);
-
-  initial begin
-    for (im = 0; im < 4; im = im + 1)
-      for (ia = 0; ia < 256; ia = ia + 1)
-        for (is = 0; is < 8; is = is + 1) begin
-          a = ia; sh = is; mode = im; #1;
-          sa = $signed(a);
-          case (im)
-            0: ey = ia << is;
-            1: ey = ia >> is;
-            2: ey = sa >>> is;
-            3: ey = (ia >> is) | (ia << (8 - is));
-          endcase
-          if (y !== ey) begin
-            fouten = fouten + 1;
-            if (fouten < 10) $display("FAIL mode=%0d a=%h sh=%0d: y=%h verwacht %h", im, a, is, y, ey);
-          end
-        end
-
-    // Tekenuitbreiding: de waarde (met teken) blijft gelijk.
-    for (ia = 0; ia < 256; ia = ia + 1) begin
-      a = ia; #1;
-      if ($signed(ext) !== $signed(a)) begin fouten = fouten + 1; $display("FAIL sext %h", a); end
-    end
-
-    if (fouten == 0) $display("PASS: barrel shifter (LSL, LSR, ASR, ROR) en tekenuitbreiding kloppen exhaustief");
-    $finish;
-  end
-endmodule
+```{.verilog include="week12/tb_shifter.v"}
 ```
 
 ## 6. Vermenigvuldigen
@@ -247,75 +172,10 @@ Zo werkt de rekenmachine in cijfers: een register voor het opgeschoven vermenigv
 
 Het gedrag is een mini-FSM met twee toestanden (rust en bezig), plus een teller. In Verilog ziet dat er zo uit:
 
-```verilog
-// FILE: week12/mul8.v
-// 8x8 -> 16 bits, zonder teken, 8 cycli.
-module mul8(
-  input             clk,
-  input             rst_n,
-  input             start,
-  input      [7:0]  a,
-  input      [7:0]  b,
-  output reg [15:0] p,
-  output reg        done
-);
-  reg [15:0] mcand;     // vermenigvuldigtal, schuift naar links
-  reg [7:0]  mplier;    // vermenigvuldiger, schuift naar rechts
-  reg [3:0]  cnt;
-  reg        busy;
-
-  always @(posedge clk or negedge rst_n)
-    if (!rst_n) begin
-      p <= 0; done <= 0; busy <= 0; mcand <= 0; mplier <= 0; cnt <= 0;
-    end else if (!busy) begin
-      if (start) begin
-        mcand <= {8'b0, a};  mplier <= b;  p <= 0;  cnt <= 0;
-        busy <= 1;  done <= 0;
-      end
-    end else begin
-      if (mplier[0]) p <= p + mcand;
-      mcand  <= mcand << 1;
-      mplier <= mplier >> 1;
-      cnt    <= cnt + 1'b1;
-      if (cnt == 4'd7) begin busy <= 0; done <= 1; end
-    end
-endmodule
+```{.verilog include="week12/mul8.v"}
 ```
 
-```verilog
-// FILE: week12/tb_mul8.v
-module tb_mul8;
-  reg clk = 0, rst_n = 0, start = 0;
-  reg  [7:0] a = 0, b = 0;
-  wire [15:0] p;
-  wire done;
-  integer ia, ib, fouten = 0, cycli = 0;
-
-  mul8 dut(clk, rst_n, start, a, b, p, done);
-  always #5 clk = ~clk;
-
-  initial begin
-    #12 rst_n = 1;
-    for (ia = 0; ia < 256; ia = ia + 5)         // elke vijfde waarde van a, alle waarden van b
-      for (ib = 0; ib < 256; ib = ib + 1) begin
-        @(negedge clk); a = ia; b = ib; start = 1;
-        @(negedge clk); start = 0; cycli = 0;
-        while (!done) begin @(negedge clk); cycli = cycli + 1; end
-        if (p !== ia * ib) begin
-          fouten = fouten + 1;
-          if (fouten < 10) $display("FAIL: %0d * %0d = %0d i.p.v. %0d", ia, ib, p, ia * ib);
-        end
-        if (cycli != 8) begin fouten = fouten + 1; $display("FAIL: duur %0d cycli", cycli); end
-      end
-    // Hoeken
-    @(negedge clk); a = 255; b = 255; start = 1;
-    @(negedge clk); start = 0;
-    while (!done) @(negedge clk);
-    if (p !== 16'd65025) begin fouten = fouten + 1; $display("FAIL 255*255 = %0d", p); end
-    if (fouten == 0) $display("PASS: sequentiele vermenigvuldiger klopt (13000+ producten) in vaste tijd");
-    $finish;
-  end
-endmodule
+```{.verilog include="week12/tb_mul8.v"}
 ```
 
 ### Delen

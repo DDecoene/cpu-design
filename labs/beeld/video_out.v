@@ -1,4 +1,3 @@
-// FILE: beeld/video_out.v
 // Van framebuffer naar VGA-pinnen. Het scherm is 160 x 120 blokken van 4 x 4 pixels, elk blok met een van 16 kleuren.
 // Twee blokken per byte: het linker in de hoge, het rechter in de lage nibble. Een rij is dus 80 bytes.
 module video_out(

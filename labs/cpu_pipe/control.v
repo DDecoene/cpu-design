@@ -1,4 +1,3 @@
-// FILE: cpu/control.v
 // De besturingseenheid: een controlegeheugen (control store) dat voor elke combinatie
 // van (opcode, stap) een controlewoord oplevert. Stap 0 = ophalen, stap 1 = uitvoeren.
 module control(

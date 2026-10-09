@@ -103,49 +103,7 @@ Met deze vier vlaggen kan een CPU alle vergelijkingen doen. Of de tabel klopt, l
 
 ## 4. De ALU in Verilog
 
-```verilog
-// FILE: week11/alu.v
-// 8-bit (parametrisch) ALU met vlaggen Z, N, C, V.
-module alu #(parameter W = 8) (
-  input      [W-1:0] a,
-  input      [W-1:0] b,
-  input      [2:0]   op,
-  output reg [W-1:0] y,
-  output             z,
-  output             n,
-  output reg         c,
-  output reg         v
-);
-  localparam ADD = 3'd0, SUB = 3'd1, AND_ = 3'd2, OR_ = 3'd3,
-             XOR_ = 3'd4, NOT_ = 3'd5, SHL = 3'd6, SHR = 3'd7;
-
-  // Eén extra bit breed, zodat de carry uit het hoogste bit zichtbaar is.
-  wire [W:0] sum  = {1'b0, a} + {1'b0, b};
-  wire [W:0] diff = {1'b0, a} + {1'b0, ~b} + 1'b1;     // A - B = A + ~B + 1
-
-  always @* begin
-    y = {W{1'b0}};  c = 1'b0;  v = 1'b0;               // standaardwaarden: geen latches
-    case (op)
-      ADD:  begin
-              y = sum[W-1:0];  c = sum[W];
-              v = (a[W-1] == b[W-1]) && (y[W-1] != a[W-1]);
-            end
-      SUB:  begin
-              y = diff[W-1:0]; c = diff[W];
-              v = (a[W-1] != b[W-1]) && (y[W-1] != a[W-1]);
-            end
-      AND_: y = a & b;
-      OR_:  y = a | b;
-      XOR_: y = a ^ b;
-      NOT_: y = ~a;
-      SHL:  begin y = {a[W-2:0], 1'b0}; c = a[W-1]; end
-      SHR:  begin y = {1'b0, a[W-1:1]}; c = a[0];   end
-    endcase
-  end
-
-  assign z = (y == {W{1'b0}});
-  assign n = y[W-1];
-endmodule
+```{.verilog include="week11/alu.v"}
 ```
 
 Kijk naar de opbouw: eerst de standaardwaarden, dan een `case` die de bewerking kiest, en daarna de vlaggen, die alleen uit `y` volgen. Alle acht de bewerkingen worden tegelijk berekend. De `case` is in hardware een multiplexer die kiest welk resultaat doorgelaten wordt.
@@ -156,49 +114,7 @@ Dit is eenvoudig, maar bruikbaar. Echte ALU's voegen er rotaties, vergelijkingen
 
 Een 8-bit ALU heeft maar 65 536 invoerparen en 8 bewerkingen, dus 524 288 gevallen. Dat doet de simulator in een seconde, dus we testen alles. Het referentiemodel rekent met gewone gehele getallen in de testbench en berekent het resultaat en de vlaggen op een andere manier dan de hardware.
 
-```verilog
-// FILE: week11/tb_alu.v
-module tb_alu;
-  reg  [7:0] a, b;
-  reg  [2:0] op;
-  wire [7:0] y;
-  wire       z, n, c, v;
-  integer ia, ib, io, fouten = 0, sa, sb, volledig;
-  reg [7:0] ey;
-  reg       ec, ev;
-
-  alu #(8) dut(a, b, op, y, z, n, c, v);
-
-  initial begin
-    for (io = 0; io < 8; io = io + 1)
-      for (ia = 0; ia < 256; ia = ia + 1)
-        for (ib = 0; ib < 256; ib = ib + 1) begin
-          a = ia; b = ib; op = io; #1;
-          sa = $signed(a); sb = $signed(b);             // getallen met teken
-          ec = 0; ev = 0; ey = 0;
-          case (io)
-            0: begin volledig = ia + ib; ey = volledig; ec = (volledig > 255);
-                     volledig = sa + sb; ev = (volledig > 127 || volledig < -128); end
-            1: begin volledig = ia - ib; ey = volledig; ec = (ia >= ib);
-                     volledig = sa - sb; ev = (volledig > 127 || volledig < -128); end
-            2: ey = ia & ib;
-            3: ey = ia | ib;
-            4: ey = ia ^ ib;
-            5: ey = ~a;
-            6: begin ey = ia << 1; ec = a[7]; end
-            7: begin ey = ia >> 1; ec = a[0]; end
-          endcase
-          if (y !== ey || c !== ec || v !== ev || z !== (ey == 0) || n !== ey[7]) begin
-            fouten = fouten + 1;
-            if (fouten < 10)
-              $display("FAIL op=%0d a=%h b=%h: y=%h c=%b v=%b z=%b n=%b, verwacht y=%h c=%b v=%b",
-                       io, a, b, y, c, v, z, n, ey, ec, ev);
-          end
-        end
-    if (fouten == 0) $display("PASS: ALU klopt voor alle 524288 combinaties van operanden en bewerking");
-    $finish;
-  end
-endmodule
+```{.verilog include="week11/tb_alu.v"}
 ```
 
 Het model berekent de vlaggen op een andere manier dan de hardware: de carry als `volledig > 255` en de overflow door met getallen met teken te rekenen en te kijken of het resultaat buiten −128..127 valt. Delen hardware en model dezelfde denkfout, dan vind je die nooit. Schrijf het model daarom bij voorkeur op een onafhankelijke manier.
@@ -207,31 +123,7 @@ Het model berekent de vlaggen op een andere manier dan de hardware: de carry als
 
 De tabel uit paragraaf 3 is een belofte. We controleren hem voor alle paren.
 
-```verilog
-// FILE: week11/tb_compare.v
-module tb_compare;
-  reg  [7:0] a, b;
-  wire [7:0] y;
-  wire       z, n, c, v;
-  integer ia, ib, fouten = 0;
-
-  alu #(8) dut(a, b, 3'd1, y, z, n, c, v);   // altijd SUB
-
-  initial begin
-    for (ia = 0; ia < 256; ia = ia + 1)
-      for (ib = 0; ib < 256; ib = ib + 1) begin
-        a = ia; b = ib; #1;
-        if (z !== (ia == ib))                         begin fouten = fouten + 1; end
-        if (c !== (ia >= ib))                         begin fouten = fouten + 1; end
-        if ((c && !z) !== (ia > ib))                  begin fouten = fouten + 1; end
-        if ((n ^ v) !== ($signed(a) < $signed(b)))    begin fouten = fouten + 1; end
-        if (!(n ^ v) !== ($signed(a) >= $signed(b)))  begin fouten = fouten + 1; end
-      end
-    if (fouten == 0) $display("PASS: alle vergelijkingen via vlaggen kloppen (Z, C, N^V)");
-    else             $display("FAIL: %0d afwijkingen", fouten);
-    $finish;
-  end
-endmodule
+```{.verilog include="week11/tb_compare.v"}
 ```
 
 Draai ze:

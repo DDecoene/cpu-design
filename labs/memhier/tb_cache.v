@@ -1,4 +1,3 @@
-// FILE: memhier/tb_cache.v
 module tb_cache;
   reg clk = 0, rst_n = 0, req = 0, we = 0;
   reg  [7:0] addr = 0, wdata = 0;

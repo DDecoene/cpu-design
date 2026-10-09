@@ -1,4 +1,3 @@
-# FILE: tta_hw/test_split_rom.py
 # De drie EEPROM-bestanden moeten samen precies de oorspronkelijke 24-bit-woorden opleveren.
 import random
 from split_rom import split

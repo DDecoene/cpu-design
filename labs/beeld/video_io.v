@@ -1,4 +1,3 @@
-// FILE: beeld/video_io.v
 // De registers van het beeld, zoals de CPU ze ziet (adressen 0xF8 tot en met 0xFB):
 //   0xF8  FB_LO      laag byte van het byteadres in het framebuffer (lezen en schrijven)
 //   0xF9  FB_HI      hoog byte (6 bit; lezen en schrijven)

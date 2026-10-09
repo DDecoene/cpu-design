@@ -1,4 +1,3 @@
-// FILE: cpu_pipe/cpu_p.v
 // De gepijplijnde W8 (twee trappen: ophalen en uitvoeren). Hergebruikt het datapath ongewijzigd.
 // Bij een genomen sprong is de instructie die intussen is opgehaald fout: die vervangen we door een NOP (flush).
 module cpu_p #(

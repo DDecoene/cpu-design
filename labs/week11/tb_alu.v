@@ -1,4 +1,3 @@
-// FILE: week11/tb_alu.v
 module tb_alu;
   reg  [7:0] a, b;
   reg  [2:0] op;

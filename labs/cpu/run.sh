@@ -1,4 +1,3 @@
-# FILE: cpu/run.sh
 #!/bin/bash
 # Gebruik: bash run.sh programma.asm
 # Assembleert het programma en draait het op de W8-CPU in de simulator.

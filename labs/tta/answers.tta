@@ -1,4 +1,3 @@
-; FILE: tta/answers.tta
 ; Uitwerkingen van de oefeningen. Uitvoer: 200 9 250 91.
         ; maximum van twee getallen met een guard
         #200 -> R0

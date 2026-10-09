@@ -1,4 +1,3 @@
-; FILE: beeld/kleurbalken.asm
 ; Vult het hele scherm met 16 verticale balken, een per palletkleur, en meldt dat het klaar is.
 ; Een byte bevat twee pixels, dus het byte 0x00 is twee zwarte blokken, 0x11 twee blauwe, enzovoort tot 0xFF (wit).
 ; Elke balk is 5 bytes = 10 blokken breed, 16 balken = 80 bytes = een volle rij.

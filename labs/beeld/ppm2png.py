@@ -1,4 +1,3 @@
-# FILE: beeld/ppm2png.py
 #!/usr/bin/env python3
 """Zet een binaire PPM (P6) om naar PNG, zodat je het beeld uit de simulatie in een gewone viewer kunt openen. Alleen standaardbibliotheek.
 

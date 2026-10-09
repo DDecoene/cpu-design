@@ -97,144 +97,22 @@ Let op de resetsynchronizer. Een knop is asynchroon. Hij mag asynchroon activere
 
 De parameters `DIV` en `TDIV` rekenen we uit de klokfrequentie: `DIV = CLK_HZ / BAUD` (klokcycli per UART-bit) en `TDIV = CLK_HZ / 1000` (cycli per milliseconde).
 
-<!-- COPY cpu/alu.v cpu_irq/alu.v -->
 
-```verilog
-// FILE: cpu_irq/fpga_top.v
-// Het toplevel voor een FPGA-bord: klok, een resetknop, LED's en een seriële poort.
-// De LED's op veel borden zijn 'actief laag' (0 = aan), vandaar led_n.
-module fpga_top #(
-  parameter CLK_HZ = 27_000_000,       // klokfrequentie van het bord
-  parameter BAUD   = 115_200
-) (
-  input        clk,
-  input        btn_rst_n,              // resetknop (0 = ingedrukt)
-  output [5:0] led_n,
-  output       uart_tx,
-  input        uart_rx
-);
-  localparam DIV  = CLK_HZ / BAUD;     // klokcycli per UART-bit
-  localparam TDIV = CLK_HZ / 1000;     // klokcycli per timertik (1 ms)
-
-  // Reset: laat de knop los synchroon met de klok los (twee flipflops), zoals in week 6.
-  reg [1:0] rst_sync = 2'b00;
-  always @(posedge clk or negedge btn_rst_n)
-    if (!btn_rst_n) rst_sync <= 2'b00;
-    else            rst_sync <= {rst_sync[0], 1'b1};
-  wire rst_n = rst_sync[1];
-
-  wire [7:0] gpio_out;
-  cpu_i #("hello.hex", 1, DIV, TDIV, "hello.dat", 1) cpu(
-    .clk(clk), .rst_n(rst_n), .halted(),
-    .pc_out(), .r0(), .r1(), .r2(), .r3(), .r4(), .r5(), .r6(), .r7(),
-    .flag_z(), .flag_n(), .flag_c(), .flag_v(),
-    .txd(uart_tx), .rxd(uart_rx), .gpio_in(8'h00), .gpio_out(gpio_out)
-  );
-
-  assign led_n = ~gpio_out[5:0];
-endmodule
+```{.verilog include="cpu_irq/fpga_top.v"}
 ```
 
 ### Een programma voor het bord
 
 Het programma stuurt eerst "W8 OK" via de UART (je ziet dat in een terminal) en laat daarna de LED elke 250 ms knipperen met de timer-interrupt:
 
-```text
-; FILE: cpu_irq/hello.asm
-; Zegt "W8 OK" via de UART en laat daarna een LED knipperen met de timer.
-; Op de FPGA is een timertik 1 ms, dus 250 betekent: de LED wisselt elke 250 ms.
-        .data 16, 0x57, 0x38, 0x20, 0x4F, 0x4B, 0x0D, 0x0A, 0   ; "W8 OK" + nieuwe regel + einde
-        B    main
-        .org 2
-isr:    LDI  R6, 0xE0
-        ST   R0, [R6+0]         ; R0 bewaren
-        LDI  R6, 0xF5
-        LD   R0, [R6]           ; LED-toestand
-        LDI  R6, 1
-        XOR  R0, R0, R6         ; bit 0 omkeren
-        LDI  R6, 0xF5
-        ST   R0, [R6]
-        LDI  R6, 0xF3
-        ST   R0, [R6]           ; timer-aanvraag wissen
-        LDI  R6, 0xE0
-        LD   R0, [R6+0]
-        RETI
-
-main:   LDI  R4, 0xF0           ; UART data
-        LDI  R5, 0xF1           ; UART status
-        LDI  R2, 16             ; begin van de tekst
-volgende:
-        LD   R1, [R2]
-        CMPI R1, 0
-        BEQ  klaar
-        CALL send
-        ADDI R2, 1
-        B    volgende
-klaar:  LDI  R4, 0xF2
-        LDI  R5, 250
-        ST   R5, [R4]           ; timer: 250 tikken
-        LDI  R4, 0xF7
-        LDI  R5, 1
-        ST   R5, [R4]           ; timer-interrupt aan
-        EI
-slaap:  B    slaap
-
-send:   LD   R0, [R5]
-        LDI  R3, 1
-        AND  R0, R0, R3
-        BNE  send               ; wacht tot de zender vrij is
-        ST   R1, [R4]
-        RET
+```{.text include="cpu_irq/hello.asm"}
 ```
 
 ### De testbench voor het toplevel
 
 In de simulatie gebruiken we een kleine klok (16 000 Hz, 1 000 baud) zodat de test snel is, en een onafhankelijke UART-ontvanger die de lijn afluistert:
 
-```verilog
-// FILE: cpu_irq/tb_fpga_top.v
-// Test van het toplevel met een kleine "klok" zodat de simulatie snel is: 16 klokcycli per UART-bit.
-module tb_fpga_top;
-  localparam CLK_HZ = 16000, BAUD = 1000, DIV = 16;
-  reg clk = 0, btn = 0;
-  wire [5:0] led_n;
-  wire tx;
-  integer fouten = 0, wissels = 0, n = 0;
-  reg [7:0] tekst [0:15];
-  reg vorige0 = 1'b1;               // LED uit (actief laag)
-
-  fpga_top #(CLK_HZ, BAUD) dut(.clk(clk), .btn_rst_n(btn), .led_n(led_n), .uart_tx(tx), .uart_rx(1'b1));
-  always #5 clk = ~clk;
-
-  // Onafhankelijke UART-ontvanger
-  initial begin : rx
-    reg [7:0] b; integer i;
-    forever begin
-      @(negedge tx);
-      repeat (DIV + DIV / 2) @(posedge clk);
-      for (i = 0; i < 8; i = i + 1) begin b[i] = tx; repeat (DIV) @(posedge clk); end
-      if (tx !== 1'b1) begin fouten = fouten + 1; $display("FAIL: geen stopbit"); end
-      tekst[n] = b; n = n + 1;
-    end
-  end
-
-  always @(posedge clk) begin
-    if (btn && led_n[0] !== vorige0) wissels = wissels + 1;
-    vorige0 = led_n[0];
-  end
-
-  initial begin
-    #47 btn = 1;                      // de resetknop loslaten
-    repeat (30000) @(posedge clk);
-    $display("bericht: %0d tekens, LED wisselde %0d keer", n, wissels);
-    if (n !== 7) begin fouten = fouten + 1; $display("FAIL: %0d tekens ontvangen", n); end
-    else if (tekst[0] !== "W" || tekst[1] !== "8" || tekst[2] !== " " || tekst[3] !== "O" || tekst[4] !== "K" ||
-             tekst[5] !== 8'h0D || tekst[6] !== 8'h0A) begin fouten = fouten + 1; $display("FAIL: verkeerde tekst"); end
-    if (wissels < 4) begin fouten = fouten + 1; $display("FAIL: LED knippert niet genoeg"); end
-    if (fouten == 0) $display("PASS: het toplevel zegt 'W8 OK' via de UART en laat de LED knipperen");
-    $finish;
-  end
-endmodule
+```{.verilog include="cpu_irq/tb_fpga_top.v"}
 ```
 
 ## 5. Een les uit de praktijk: alles verdwijnt
@@ -271,56 +149,7 @@ Wat je hieruit leert:
 
 Het script voert synthese, plaatsen en routeren en het maken van de bitstream uit. Het maakt de virtuele omgeving zelf aan als die ontbreekt.
 
-```bash
-# FILE: cpu_irq/fpga_flow.sh
-#!/bin/bash
-# Synthese, plaatsen en routeren, en een bitstream voor een iCE40-FPGA, met de open-source tools.
-# Gebruik:  bash fpga_flow.sh [hx8k|up5k] [top]        bijvoorbeeld:  bash fpga_flow.sh hx8k fpga_top
-# Omgevingsvariabelen:  VENV=map met de virtuele omgeving   FREQ=doelfrequentie in MHz   PCF=pinbestand van je bord
-set -e
-DEV=${1:-hx8k}
-if [ -f memories_f.v ]; then DEFTOP=fpga_top_f; else DEFTOP=fpga_top; fi   # week 24-versie, of de oorspronkelijke van week 23
-TOP=${2:-$DEFTOP}
-VENV=${VENV:-$HOME/fpga-venv}
-FREQ=${FREQ:-27}
-
-# Eenmalig: een afgesloten Python-omgeving met de tools (niets systeembreed geïnstalleerd, te wissen met rm -r)
-if [ ! -d "$VENV" ]; then
-  python3 -m venv "$VENV"
-  "$VENV/bin/pip" install --quiet yowasp-yosys yowasp-nextpnr-ice40
-fi
-YOSYS="$VENV/bin/yowasp-yosys"
-NEXTPNR="$VENV/bin/yowasp-nextpnr-ice40"
-PACK="$VENV/bin/yowasp-icepack"
-
-python3 asm.py hello.asm                      # het programma voor de CPU: hello.hex en hello.dat
-cp -n hello.hex prog.hex 2>/dev/null || true  # Yosys leest de standaardnamen ook; ze moeten bestaan
-cp -n hello.dat data.hex 2>/dev/null || true
-
-SOURCES="alu.v idecode.v memories.v memories_f.v datapath_i.v control_f.v mmio_f.v cpu_f.v fpga_top_f.v"
-[ "$TOP" = "fpga_top" ] && SOURCES="alu.v idecode.v memories.v datapath_i.v control_i.v mmio.v cpu_i.v fpga_top.v"
-
-echo "=== synthese ($TOP)"
-"$YOSYS" -q -l synth.log -p "read_verilog -sv $SOURCES; synth_ice40 -flatten -top $TOP -json $TOP.json; tee -o stat.txt stat"
-grep -E "SB_LUT4|SB_DFF|SB_RAM40|SB_CARRY" stat.txt
-
-case "$DEV" in
-  hx8k) ARGS="--hx8k --package ct256" ;;
-  up5k) ARGS="--up5k --package sg48" ;;
-  *) echo "onbekend apparaat: $DEV"; exit 1 ;;
-esac
-PINS="--pcf-allow-unconstrained"
-[ -n "$PCF" ] && PINS="--pcf $PCF"
-
-echo "=== plaatsen en routeren ($DEV, doel $FREQ MHz)"
-set +e
-"$NEXTPNR" $ARGS --json $TOP.json --asc $TOP.asc --freq $FREQ $PINS --seed 1 -l pnr.log -q
-set -e
-grep -E "ICESTORM_LC:|ICESTORM_RAM:|Max frequency" pnr.log | tail -4
-
-if [ -f $TOP.asc ]; then
-  "$PACK" $TOP.asc $TOP.bin && echo "=== bitstream: $TOP.bin ($(wc -c < $TOP.bin) bytes)"
-fi
+```{.bash include="cpu_irq/fpga_flow.sh"}
 ```
 
 Gebruik:

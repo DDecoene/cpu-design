@@ -1,4 +1,3 @@
-// FILE: cpu/tb_isa.v
 `include "asm_funcs.vh"
 module tb_isa;
   reg  [15:0] ir;

@@ -1,4 +1,3 @@
-// FILE: tt_t8/t8_core.v
 // De kern van de T8, met instelbare breedte van de programmateller (PCW) en van het geheugenadres (AW).
 // Het programmageheugen zit er niet in: de instructie komt van buiten (rom_addr -> instr).
 // Met PCW = 8 en AW = 8 is dit exact de machine uit week 19; kleinere waarden maken hem geschikt voor een kleine chip.

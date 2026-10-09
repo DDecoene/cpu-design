@@ -1,4 +1,3 @@
-// FILE: beeld_fpga/pll_ice40.v
 // De pixelklok uit de 12 MHz van het bord, met de PLL van de iCE40. De getallen komen van het hulpprogramma icepll:
 //   icepll -i 12 -o 25.175   geeft 25,125 MHz (VCO 804 MHz, gedeeld door 32). Dat ligt 0,2 % onder de standaard 25,175 MHz.
 // Dit bestand gebruikt een primitief van de chip en kan daarom niet in Icarus Verilog gesimuleerd worden.

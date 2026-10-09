@@ -1,4 +1,3 @@
-// FILE: week06/regs.v
 // Register met asynchrone reset en load-enable.
 module reg_en #(parameter W = 8) (
   input              clk,

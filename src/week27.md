@@ -116,45 +116,7 @@ Alles wat de generator moet doen is tellen. Een teller `hc` telt pixels van 0 to
 
 De module krijgt de tabel als parameters, zodat je er later een andere modus mee kunt maken (oefening 4).
 
-```verilog
-// FILE: beeld/vga_sync.v
-// De tijdbasis van een VGA-beeld: twee tellers die pixels en lijnen tellen.
-// Standaard: 640x480 bij 60 Hz, pixelklok ongeveer 25 MHz, negatieve syncpulsen.
-module vga_sync #(
-  parameter H_VIS = 640, H_FP = 16, H_SYNC = 96, H_BP = 48,   // horizontaal, in pixels
-  parameter V_VIS = 480, V_FP = 10, V_SYNC = 2,  V_BP = 33,   // verticaal, in lijnen
-  parameter SYNC_NEG = 1                                       // 1: de syncpulsen zijn laag
-) (
-  input         pclk,
-  input         rst_n,
-  output        hsync,     // het niveau dat naar de monitor gaat
-  output        vsync,
-  output        active,    // 1 in het zichtbare gebied
-  output        vblank,    // 1 buiten het zichtbare gebied, onder en boven
-  output [10:0] x,         // pixelpositie in de lijn
-  output [10:0] y          // lijnnummer
-);
-  localparam H_TOT = H_VIS + H_FP + H_SYNC + H_BP;
-  localparam V_TOT = V_VIS + V_FP + V_SYNC + V_BP;
-
-  reg [10:0] hc, vc;
-  always @(posedge pclk or negedge rst_n)
-    if (!rst_n) begin hc <= 0; vc <= 0; end
-    else if (hc == H_TOT - 1) begin
-      hc <= 0;
-      vc <= (vc == V_TOT - 1) ? 11'd0 : vc + 1'b1;
-    end else hc <= hc + 1'b1;
-
-  wire hs = (hc >= H_VIS + H_FP) && (hc < H_VIS + H_FP + H_SYNC);
-  wire vs = (vc >= V_VIS + V_FP) && (vc < V_VIS + V_FP + V_SYNC);
-
-  assign hsync  = SYNC_NEG ? ~hs : hs;
-  assign vsync  = SYNC_NEG ? ~vs : vs;
-  assign active = (hc < H_VIS) && (vc < V_VIS);
-  assign vblank = (vc >= V_VIS);
-  assign x = hc;
-  assign y = vc;
-endmodule
+```{.verilog include="beeld/vga_sync.v"}
 ```
 
 Twee dingen om op te letten. De tellers hebben 11 bit, omdat grotere modi dan 640 x 480 (zoals 800 x 600) meer dan 1023 tellen. En `x` en `y` zijn gewoon de tellerwaarden: buiten het zichtbare gebied zijn ze groter dan 639 en 479, en de modules die ze gebruiken moeten dat negeren door naar `active` te kijken.
@@ -167,60 +129,14 @@ Voordat er een framebuffer is, laten we de generator een beeld maken dat alleen 
 2. acht kleurbalken: staan de drie kleurkanalen niet verwisseld?
 3. een grijsverloop van 16 stappen: werkt de DAC over het hele bereik?
 
-```verilog
-// FILE: beeld/vga_bars.v
-// Testbeeld: een witte rand, acht kleurbalken en een grijsverloop.
-// De rand laat zien of de hoeken van het beeld goed liggen, de balken of de kleurkanalen kloppen.
-module vga_bars(
-  input  [10:0] x,
-  input  [10:0] y,
-  input         active,
-  output reg [3:0] r, g, b
-);
-  // Balknummer 0..7 zonder delen: tel hoeveel grenzen (elke 80 pixels) x al voorbij is.
-  wire [2:0] bar = (x >= 80) + (x >= 160) + (x >= 240) + (x >= 320) + (x >= 400) + (x >= 480) + (x >= 560);
-
-  always @* begin
-    r = 4'h0; g = 4'h0; b = 4'h0;
-    if (active) begin
-      if (x == 0 || x == 639 || y == 0 || y == 479) begin
-        r = 4'hF; g = 4'hF; b = 4'hF;                  // witte rand van 1 pixel
-      end else if (y < 320) begin
-        r = {4{bar[2]}}; g = {4{bar[1]}}; b = {4{bar[0]}};   // zwart, blauw, groen, cyaan, rood, magenta, geel, wit
-      end else begin
-        r = x[7:4]; g = x[7:4]; b = x[7:4];            // 16 grijstinten, elke 16 pixels een stap
-      end
-    end
-  end
-endmodule
+```{.verilog include="beeld/vga_bars.v"}
 ```
 
 Het balknummer is `x / 80`, maar we delen niet. Een deling kost veel logica, en we hoeven het getal alleen te weten tot 7. In plaats daarvan tellen we hoeveel van de zeven grenzen (80, 160, ...) `x` al voorbij is. Dat zijn zeven vergelijkingen die samen de balk geven. Dit is een veelgebruikte truc in hardware: vervang een deling door vergelijkingen of door een teller.
 
 Tot slot de top, die de tellers en het testbeeld verbindt:
 
-```verilog
-// FILE: beeld/vga_testbeeld.v
-// Het eerste complete beeld: tijdbasis plus testbeeld, met uitgangsregisters.
-// Alle uitgangen worden samen een klok vertraagd, dus sync en kleur blijven uitgelijnd en er komen geen glitches op de pinnen.
-module vga_testbeeld(
-  input        pclk,
-  input        rst_n,
-  output reg   hsync, vsync,
-  output reg [3:0] r, g, b
-);
-  wire hs, vs, active;
-  wire [10:0] x, y;
-  wire [3:0] pr, pg, pb;
-
-  vga_sync sync(.pclk(pclk), .rst_n(rst_n), .hsync(hs), .vsync(vs), .active(active), .vblank(), .x(x), .y(y));
-  vga_bars bars(.x(x), .y(y), .active(active), .r(pr), .g(pg), .b(pb));
-
-  always @(posedge pclk) begin
-    hsync <= hs; vsync <= vs;
-    r <= pr; g <= pg; b <= pb;
-  end
-endmodule
+```{.verilog include="beeld/vga_testbeeld.v"}
 ```
 
 Let op de uitgangsregisters onderaan. Alle uitgangen worden samen één klok vertraagd. Dat doen we met twee redenen:
@@ -234,272 +150,25 @@ Dat tweede principe, alles wat bij elkaar hoort even lang vertragen, keert volge
 
 Een echte monitor heb je voor de simulatie niet nodig. We maken er zelf een: een stuk Verilog dat alleen voor de simulatie bedoeld is, en dat zich net zo gedraagt als een monitor. Het kijkt alleen naar de syncpulsen (zoals een echte monitor) en bepaalt daaruit waar de pixels liggen. Het beeld begint 144 pixels na het begin van de horizontale sync (96 sync + 48 back porch) en 35 lijnen na het begin van de verticale sync (2 + 33). Alle pixels komen in een geheugen, en een taak schrijft het hele beeld weg als PPM-bestand.
 
-```verilog
-// FILE: beeld/vga_mon.v
-// Een virtuele monitor, alleen voor simulatie. Hij kijkt, net als een echte monitor, alleen naar de syncpulsen en bepaalt daaruit
-// waar de pixels liggen: het beeld begint 144 pixels na het begin van de horizontale sync (96 sync + 48 back porch)
-// en 35 lijnen na het begin van de verticale sync (2 sync + 33 back porch).
-// Elk volledig beeld komt in img[y*640 + x] met 12 bit per pixel ({r,g,b}); write_ppm schrijft het weg om te bekijken.
-module vga_mon #(parameter W = 640, parameter H = 480, parameter H_START = 144, parameter V_START = 35) (
-  input        pclk,
-  input        hsync, vsync,
-  input  [3:0] r, g, b,
-  output reg   frame_done,                 // een klok lang 1 als een volledig beeld binnen is
-  output reg [31:0] frames
-);
-  reg [11:0] img [0:W*H-1];
-  integer hx = 0, k = 0, x, y;
-  integer painted = 0, unknown = 0;        // lopende tellers
-  integer painted_last = 0, unknown_last = 0;   // tellers van het laatste volledige beeld
-  reg tracking = 1'b0, hs_p = 1'b1, vs_p = 1'b1;
-  initial frames = 0;
-
-  always @(posedge pclk) begin
-    frame_done <= 1'b0;
-    if (vs_p === 1'b1 && vsync === 1'b0) begin           // vsync begint: het vorige beeld is af
-      if (tracking) begin
-        frame_done <= 1'b1; frames <= frames + 1;
-        painted_last = painted; unknown_last = unknown;
-      end
-      tracking = 1'b1; k = 0; painted = 0; unknown = 0;
-    end
-    if (hs_p === 1'b1 && hsync === 1'b0) begin hx = 0; k = k + 1; end
-    else hx = hx + 1;
-    x = hx - H_START;
-    y = k - V_START;
-    if (tracking && x >= 0 && x < W && y >= 0 && y < H) begin
-      img[y*W + x] = {r, g, b};
-      painted = painted + 1;
-      if (^{r, g, b} === 1'bx) unknown = unknown + 1;
-    end
-    hs_p = hsync; vs_p = vsync;
-  end
-
-  task write_ppm(input [8*80-1:0] name);   // binaire PPM (P6), 8 bit per kleur: de 4 bit worden met 17 vermenigvuldigd
-    integer fd, i;
-    reg [11:0] p;
-    begin
-      fd = $fopen(name, "wb");
-      if (fd == 0) $display("let op: kan %0s niet schrijven (bestaat de map?)", name);
-      else begin
-        $fwrite(fd, "P6\n%0d %0d\n255\n", W, H);
-        for (i = 0; i < W*H; i = i + 1) begin
-          p = img[i];
-          $fwrite(fd, "%c%c%c", p[11:8] * 17, p[7:4] * 17, p[3:0] * 17);
-        end
-        $fclose(fd);
-      end
-    end
-  endtask
-endmodule
+```{.verilog include="beeld/vga_mon.v"}
 ```
 
 Er zijn twee tests. De eerste controleert de timing met losse tellers die de getallen uit de specificatie letterlijk gebruiken. Dat is een bewuste keuze: gebruik je de tellers uit het ontwerp zelf, dan controleer je het ontwerp met zichzelf en slaagt elke fout.
 
-```verilog
-// FILE: beeld/tb_vga_sync.v
-// Controleert de VGA-timing met losse tellers die de getallen uit de specificatie letterlijk gebruiken.
-module tb_vga_sync;
-  reg pclk = 0, rst_n = 0;
-  wire hsync, vsync, active, vblank;
-  wire [10:0] x, y;
-  integer fouten = 0;
-
-  vga_sync dut(.pclk(pclk), .rst_n(rst_n), .hsync(hsync), .vsync(vsync), .active(active), .vblank(vblank), .x(x), .y(y));
-  always #20 pclk = ~pclk;
-
-  integer t = 0;                          // klokcycli sinds de reset
-  integer hs_fall = -1, vs_fall = -1;
-  integer frames = 0, actief = 0, laatste_actief = -1;
-  reg hs_p = 1, vs_p = 1;
-
-  task check(input cond, input [8*60-1:0] tekst);
-    if (!cond) begin fouten = fouten + 1; $display("FAIL: %0s (t=%0d)", tekst, t); end
-  endtask
-
-  always @(posedge pclk) if (rst_n) begin
-    t = t + 1;
-    if (active) begin
-      actief = actief + 1;
-      laatste_actief = t;
-      if (x >= 640 || y >= 480) check(0, "actief buiten 640 x 480");
-    end
-    if ((y >= 480) !== vblank) check(0, "vblank hoort bij y >= 480");
-    // horizontale sync
-    if (hs_p && !hsync) begin
-      check(x === 656, "hsync begint na 640 pixels plus 16 front porch");
-      if (hs_fall >= 0) check(t - hs_fall == 800, "een lijn duurt 800 klokken");
-      if (y < 480) check(t - laatste_actief == 17, "front porch: 16 klokken tussen de laatste pixel en de sync");
-      hs_fall = t;
-    end
-    if (!hs_p && hsync) check(t - hs_fall == 96, "horizontale sync is 96 klokken laag");
-    // verticale sync
-    if (vs_p && !vsync) begin
-      check(y === 490 && x === 0, "vsync begint na 480 lijnen plus 10 front porch");
-      if (vs_fall >= 0) begin
-        check(t - vs_fall == 525 * 800, "een beeld duurt 525 lijnen");
-        check(actief == 640 * 480, "307200 actieve pixels per beeld");
-        frames = frames + 1;
-      end
-      vs_fall = t; actief = 0;
-    end
-    if (!vs_p && vsync) check(t - vs_fall == 2 * 800, "verticale sync is 2 lijnen laag");
-    hs_p = hsync; vs_p = vsync;
-  end
-
-  initial begin
-    #100 rst_n = 1;
-    wait (frames == 2);
-    if (fouten == 0) $display("PASS: 800 x 525 klokken, syncbreedtes 96 en 2 lijnen, 307200 actieve pixels, front porch 16");
-    $finish;
-  end
-endmodule
+```{.verilog include="beeld/tb_vga_sync.v"}
 ```
 
 De tweede bekijkt het testbeeld met de virtuele monitor en vergelijkt elke pixel van het eerste volledige beeld met wat het volgens de beschrijving moet zijn:
 
-```verilog
-// FILE: beeld/tb_vga_testbeeld.v
-// Het testbeeld bekijken met de virtuele monitor en elke pixel van het eerste volledige beeld controleren.
-module tb_vga_testbeeld;
-  reg pclk = 0, rst_n = 0;
-  wire hsync, vsync;
-  wire [3:0] r, g, b;
-  wire frame_done;
-  wire [31:0] frames;
-  integer fouten = 0, x, y, bar;
-  reg [11:0] verwacht;
-
-  vga_testbeeld dut(.pclk(pclk), .rst_n(rst_n), .hsync(hsync), .vsync(vsync), .r(r), .g(g), .b(b));
-  vga_mon mon(.pclk(pclk), .hsync(hsync), .vsync(vsync), .r(r), .g(g), .b(b), .frame_done(frame_done), .frames(frames));
-  always #20 pclk = ~pclk;
-
-  initial begin
-    #100 rst_n = 1;
-    wait (frames == 1);
-    #1;
-    if (mon.painted_last !== 640 * 480) begin fouten = fouten + 1; $display("FAIL: %0d pixels geschilderd, verwacht 307200", mon.painted_last); end
-    if (mon.unknown_last !== 0) begin fouten = fouten + 1; $display("FAIL: %0d onbekende pixels", mon.unknown_last); end
-    for (y = 0; y < 480; y = y + 1)
-      for (x = 0; x < 640; x = x + 1) begin
-        bar = x / 80;
-        if (x == 0 || x == 639 || y == 0 || y == 479) verwacht = 12'hFFF;
-        else if (y < 320) verwacht = {{4{bar[2]}}, {4{bar[1]}}, {4{bar[0]}}};
-        else verwacht = {3{x[7:4]}};
-        if (mon.img[y*640 + x] !== verwacht && fouten < 10) begin
-          fouten = fouten + 1; $display("FAIL: pixel (%0d,%0d) is %h, verwacht %h", x, y, mon.img[y*640 + x], verwacht);
-        end
-      end
-    mon.write_ppm("../../build/testbeeld.ppm");
-    if (fouten == 0) $display("PASS: alle 307200 pixels van het testbeeld liggen op de goede plek");
-    $finish;
-  end
-endmodule
+```{.verilog include="beeld/tb_vga_testbeeld.v"}
 ```
 
 Als de tests slagen, schrijft de laatste ook `build/testbeeld.ppm`. Een PPM is het eenvoudigste beeldformaat dat bestaat, maar de meeste programma's openen het niet. Dit kleine script zet het om naar PNG:
 
-```python
-# FILE: beeld/ppm2png.py
-#!/usr/bin/env python3
-"""Zet een binaire PPM (P6) om naar PNG, zodat je het beeld uit de simulatie in een gewone viewer kunt openen. Alleen standaardbibliotheek.
-
-Gebruik:  python3 ppm2png.py in.ppm uit.png [schaal]      bijvoorbeeld schaal 2 om het beeld te halveren (elke 2e pixel)
-"""
-import struct, sys, zlib
-
-
-def lees_ppm(pad):
-    data = open(pad, "rb").read()
-    delen = data.split(None, 4)
-    if delen[0] != b"P6" or int(delen[3]) != 255:
-        raise SystemExit("verwacht een binaire PPM (P6) met 8 bit per kleur")
-    w, h = int(delen[1]), int(delen[2])
-    return w, h, delen[4]
-
-
-def chunk(naam, inhoud):
-    c = struct.pack(">I", len(inhoud)) + naam + inhoud
-    return c + struct.pack(">I", zlib.crc32(naam + inhoud) & 0xFFFFFFFF)
-
-
-def schrijf_png(pad, w, h, pixels):
-    rijen = b"".join(b"\x00" + pixels[y * w * 3:(y + 1) * w * 3] for y in range(h))   # filtertype 0 voor elke rij
-    png = (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0))
-           + chunk(b"IDAT", zlib.compress(rijen)) + chunk(b"IEND", b""))
-    open(pad, "wb").write(png)
-
-
-def verklein(w, h, pixels, k):
-    """Houd elke k-de pixel in elke richting over."""
-    nw, nh = len(range(0, w, k)), len(range(0, h, k))
-    out = bytearray()
-    for y in range(0, h, k):
-        for x in range(0, w, k):
-            out += pixels[(y * w + x) * 3:(y * w + x) * 3 + 3]
-    return nw, nh, bytes(out)
-
-
-def main(argv):
-    if len(argv) < 3:
-        print(__doc__)
-        return 2
-    w, h, px = lees_ppm(argv[1])
-    k = int(argv[3]) if len(argv) > 3 else 1
-    if k > 1:
-        w, h, px = verklein(w, h, px, k)
-    schrijf_png(argv[2], w, h, px)
-    return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main(sys.argv))
+```{.python include="beeld/ppm2png.py"}
 ```
 
-```python
-# FILE: beeld/test_ppm2png.py
-#!/usr/bin/env python3
-"""Test van ppm2png.py: een klein PPM-bestand omzetten en de PNG weer uitpakken."""
-import os, struct, subprocess, sys, tempfile, zlib
-
-fouten = 0
-def check(ok, tekst):
-    global fouten
-    if not ok:
-        fouten += 1
-        print("FAIL:", tekst)
-
-def lees_png(pad):
-    data = open(pad, "rb").read()
-    check(data[:8] == b"\x89PNG\r\n\x1a\n", "PNG-handtekening")
-    pos, idat, w, h = 8, b"", 0, 0
-    while pos < len(data):
-        n, naam = struct.unpack(">I4s", data[pos:pos + 8])
-        inhoud = data[pos + 8:pos + 8 + n]
-        crc = struct.unpack(">I", data[pos + 8 + n:pos + 12 + n])[0]
-        check(crc == zlib.crc32(naam + inhoud) & 0xFFFFFFFF, f"CRC van chunk {naam}")
-        if naam == b"IHDR": w, h = struct.unpack(">II", inhoud[:8])
-        if naam == b"IDAT": idat += inhoud
-        pos += 12 + n
-    raw = zlib.decompress(idat)
-    return w, h, b"".join(raw[y * (w * 3 + 1) + 1:(y + 1) * (w * 3 + 1)] for y in range(h))
-
-with tempfile.TemporaryDirectory() as t:
-    pixels = bytes([255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 255, 255,      # rij 0: rood, groen, blauw, wit
-                    0, 0, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90])          # rij 1
-    ppm, png = os.path.join(t, "a.ppm"), os.path.join(t, "a.png")
-    open(ppm, "wb").write(b"P6\n4 2\n255\n" + pixels)
-    r = subprocess.run([sys.executable, "ppm2png.py", ppm, png], capture_output=True, text=True)
-    check(r.returncode == 0, "ppm2png.py faalt: " + r.stderr)
-    w, h, px = lees_png(png)
-    check((w, h) == (4, 2) and px == pixels, "de pixels komen ongewijzigd terug")
-    r = subprocess.run([sys.executable, "ppm2png.py", ppm, png, "2"], capture_output=True, text=True)
-    w, h, px = lees_png(png)
-    check((w, h) == (2, 1) and px == pixels[0:3] + pixels[6:9], "schaal 2 houdt elke tweede pixel over")
-
-if fouten == 0:
-    print("PASS: ppm2png zet een PPM om naar een geldige PNG")
-sys.exit(1 if fouten else 0)
+```{.python include="beeld/test_ppm2png.py"}
 ```
 
 Draai `python3 ppm2png.py ../../build/testbeeld.ppm testbeeld.png` in `labs/beeld` en open het resultaat: acht kleurbalken, daaronder drie keer het grijsverloop, en een witte rand (die je op een witte achtergrond niet ziet).
@@ -539,7 +208,7 @@ In de praktijk koop je een VGA-module die dit al doet. Er bestaan Pmod-modules m
 
 ## 9. Lab
 
-1. Draai de tests van fase 7: `python3 extract_labs.py beeld`. Dit draait ook de tests van de volgende weken, dus het duurt een halve minuut tot een minuut. De regels met `PASS` van `tb_vga_sync`, `tb_vga_testbeeld` en `test_ppm2png` horen bij deze week.
+1. Draai de tests van fase 7: `python3 test_labs.py beeld`. Dit draait ook de tests van de volgende weken, dus het duurt een halve minuut tot een minuut. De regels met `PASS` van `tb_vga_sync`, `tb_vga_testbeeld` en `test_ppm2png` horen bij deze week.
 2. Zet `testbeeld.ppm` om naar PNG en bekijk het. Zie je alle acht balken en de 16 grijstinten?
 3. Verander in `vga_bars.v` de rand: maak hem 2 pixels dik. Welke test faalt en wat moet je in de test aanpassen?
 4. Zet in `vga_sync` de polariteit om (`SYNC_NEG = 0`). Welke tests falen? Wat zou je van een echte monitor verwachten?

@@ -1,4 +1,3 @@
-# FILE: memhier/w8iss.py
 """Instructieset-simulator (ISS) voor W8 in Python. Voert een programma uit en bewaart een spoor van alle
 voorwaardelijke sprongen (adres, doel, genomen of niet), zodat we sprongvoorspellers kunnen vergelijken."""
 

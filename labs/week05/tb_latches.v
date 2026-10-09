@@ -1,4 +1,3 @@
-// FILE: week05/tb_latches.v
 module tb_latches;
   reg s, r, d, en, clk;
   wire q_sr, qn_sr, q_dl, qn_dl, q_ff;

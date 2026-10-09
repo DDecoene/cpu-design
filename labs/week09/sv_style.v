@@ -1,4 +1,3 @@
-// FILE: week09/sv_style.v
 module counter_sv #(parameter W = 8) (
   input  logic         clk, rst_n, en,
   output logic [W-1:0] q

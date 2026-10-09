@@ -1,4 +1,3 @@
-# FILE: tta_hw/bom.py
 """Telt de chips in het schema (t8_board.v) en maakt een onderdelenlijst (BOM) met een prijsindicatie.
 
 De prijzen zijn grove schattingen voor kleine aantallen en veranderen; pas ze aan in de tabel PRIJS."""

@@ -1,4 +1,3 @@
-\ FILE: stack/fib.fs
 \ Het n-de Fibonacci-getal met een lus.
 : fib ( n -- fib )
    0 1 ROT                   \ x y n

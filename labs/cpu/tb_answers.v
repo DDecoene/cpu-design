@@ -1,4 +1,3 @@
-// FILE: cpu/tb_answers.v
 // Controleert de uitwerkingen van de oefeningen van week 17.
 module tb_answers;
   reg clk = 0, rst_n = 0;

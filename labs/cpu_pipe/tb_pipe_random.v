@@ -1,4 +1,3 @@
-// FILE: cpu_pipe/tb_pipe_random.v
 `include "asm_funcs.vh"
 // Test met willekeurige programma's. Een "instructieset-simulator" (ISS) in de testbench
 // voert hetzelfde programma uit met gewone gehele getallen. Daarna vergelijken we

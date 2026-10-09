@@ -1,4 +1,3 @@
-// FILE: beeld/vga_sync.v
 // De tijdbasis van een VGA-beeld: twee tellers die pixels en lijnen tellen.
 // Standaard: 640x480 bij 60 Hz, pixelklok ongeveer 25 MHz, negatieve syncpulsen.
 module vga_sync #(

@@ -34,20 +34,7 @@ Bij `en = 1` gaat `d` de flipflop in. Anders loopt zijn eigen uitgang `q` terug 
 
 > **Een regel om aan te houden.** Zet de klok zelf nooit aan of uit met een poort (clock gating) om een register te laten vasthouden. Dat geeft glitches en timingproblemen. Gebruik altijd een enable-ingang. Moderne chips doen wel aan clock gating, maar met speciale, veilige cellen. Dat is iets voor later.
 
-```verilog
-// FILE: week06/regs.v
-// Register met asynchrone reset en load-enable.
-module reg_en #(parameter W = 8) (
-  input              clk,
-  input              rst_n,
-  input              en,
-  input      [W-1:0] d,
-  output reg [W-1:0] q
-);
-  always @(posedge clk or negedge rst_n)
-    if (!rst_n)  q <= {W{1'b0}};
-    else if (en) q <= d;
-endmodule
+```{.verilog include="week06/regs.v"}
 ```
 
 `{W{1'b0}}` betekent W keer een 0, hoe breed het register ook is.
@@ -70,20 +57,7 @@ Een shiftregister schuift bij elke klokflank alle bits één plek op. Aan de ene
 
 Je kunt het op een paar manieren gebruiken. Van serieel naar parallel: je stuurt 8 bits over één draad en haalt ze parallel weer op (de 74HC595, handig voor 8 LED's met 3 pinnen). Van parallel naar serieel: je leest 8 schakelaars over één draad in (de 74HC165). Ook vermenigvuldigen en delen met 2 gaat zo: één plek opschuiven naar links is ×2, naar rechts ÷2. Dat komt terug in week 12. En bit-serial CPU's laten de hele ALU op één bit tegelijk werken.
 
-```verilog
-// FILE: week06/shift.v
-// Serieel-in, parallel-uit schuifregister.
-module shift_reg #(parameter W = 8) (
-  input          clk,
-  input          rst_n,
-  input          en,
-  input          sin,
-  output reg [W-1:0] q
-);
-  always @(posedge clk or negedge rst_n)
-    if (!rst_n)  q <= {W{1'b0}};
-    else if (en) q <= {q[W-2:0], sin};   // schuif naar links, sin komt rechts binnen
-endmodule
+```{.verilog include="week06/shift.v"}
 ```
 
 ## 3. De teller
@@ -94,21 +68,7 @@ Een teller is ook de programmateller (PC) van een CPU. Hij wijst naar de volgend
 
 Een paar handige uitbreidingen: load zet een vaste waarde in de teller (en dat is een sprong in het programma), enable laat hem alleen tellen als `en = 1`, en reset brengt hem terug naar 0.
 
-```verilog
-// FILE: week06/counter.v
-module counter #(parameter W = 8) (
-  input              clk,
-  input              rst_n,
-  input              en,
-  input              load,
-  input      [W-1:0] d,
-  output reg [W-1:0] q
-);
-  always @(posedge clk or negedge rst_n)
-    if (!rst_n)      q <= {W{1'b0}};
-    else if (load)   q <= d;
-    else if (en)     q <= q + 1'b1;
-endmodule
+```{.verilog include="week06/counter.v"}
 ```
 
 De volgorde in de `if` bepaalt de voorrang: load wint van en. In een CPU wil je dat ook zo, want een sprong gaat voor op doortellen.
@@ -125,16 +85,7 @@ In een CPU gebruik je altijd synchrone logica.
 
 Bit n van een teller wisselt met frequentie f_klok / 2^(n+1). Zo maak je van een snelle klok een trage, bijvoorbeeld voor een LED die zichtbaar knippert of voor een tik van 1 Hz.
 
-```verilog
-// FILE: week06/lfsr.v
-// 8-bit LFSR (linear feedback shift register): een pseudo-willekeurige reeks.
-// Taps op bit 8, 6, 5, 4 (positie 7, 5, 4, 3): de reeks doorloopt 255 verschillende waarden.
-module lfsr8(input clk, input rst_n, output reg [7:0] q);
-  wire fb = q[7] ^ q[5] ^ q[4] ^ q[3];
-  always @(posedge clk or negedge rst_n)
-    if (!rst_n) q <= 8'h01;           // mag niet 0 zijn
-    else        q <= {q[6:0], fb};
-endmodule
+```{.verilog include="week06/lfsr.v"}
 ```
 
 Een LFSR is een shiftregister met een XOR-terugkoppeling. Hij is heel klein en wordt gebruikt voor willekeurige getallen, CRC-controlesommen en het testen van chips.
@@ -177,102 +128,17 @@ Een signaal van buiten (een knop, een UART) is niet gesynchroniseerd met je klok
 
 De standaardoplossing is twee flipflops achter elkaar op dezelfde klok. De eerste mag metastabiel worden: hij heeft een hele klokperiode om te beslissen. De tweede ziet een stabiele waarde. Het is geen garantie, maar de kans op een fout wordt astronomisch klein.
 
-```verilog
-// FILE: week06/sync.v
-// Twee-flipflop-synchronizer voor asynchrone ingangen.
-module sync2(input clk, input async_in, output reg out);
-  reg meta;
-  always @(posedge clk) begin
-    meta <= async_in;
-    out  <= meta;
-  end
-endmodule
+```{.verilog include="week06/sync.v"}
 ```
 
 Elke CPU die iets van buiten inleest, heeft hier een van nodig.
 
 ## 6. Tests
 
-```verilog
-// FILE: week06/tb_regs.v
-module tb_regs;
-  reg clk = 0, rst_n = 0, en = 0, load = 0, sin = 0;
-  reg  [7:0] d = 0;
-  wire [7:0] r, sh, c, l;
-  integer i, fouten = 0;
-  reg [255:0] gezien = 0;
-
-  reg_en    #(8) ur(clk, rst_n, en, d, r);
-  shift_reg #(8) us(clk, rst_n, en, sin, sh);
-  counter   #(8) uc(clk, rst_n, en, load, d, c);
-  lfsr8          ul(clk, rst_n, l);
-
-  always #5 clk = ~clk;
-
-  task check(input [255:0] ok, input [127:0] naam);
-    if (!ok[0]) begin fouten = fouten + 1; $display("FAIL: %0s", naam); end
-  endtask
-
-  initial begin
-    #12 rst_n = 1;
-
-    // register: laadt alleen als en=1
-    @(negedge clk); d = 8'hA5; en = 0;
-    @(negedge clk); check(r === 8'h00, "reg houdt vast zonder en");
-    en = 1;
-    @(negedge clk); check(r === 8'hA5, "reg laadt met en");
-    d = 8'h3C; en = 0;
-    @(negedge clk); check(r === 8'hA5, "reg bewaart waarde");
-
-    // shiftregister: schuif 1,0,1,1 binnen
-    rst_n = 0; #1; rst_n = 1; en = 1;
-    sin = 1; @(negedge clk);
-    sin = 0; @(negedge clk);
-    sin = 1; @(negedge clk);
-    sin = 1; @(negedge clk);
-    check(sh === 8'b0000_1011, "shift 1011");
-
-    // teller: telt, laadt, loopt rond
-    rst_n = 0; #1; rst_n = 1;
-    for (i = 0; i < 5; i = i + 1) @(negedge clk);
-    check(c === 8'd5, "teller telt tot 5");
-    d = 8'd250; load = 1; @(negedge clk); load = 0;
-    check(c === 8'd250, "teller laadt 250");
-    for (i = 0; i < 10; i = i + 1) @(negedge clk);
-    check(c === 8'd4, "teller loopt rond (250+10 = 260 mod 256 = 4)");
-
-    // LFSR: 255 verschillende waarden, daarna terug bij het begin
-    rst_n = 0; #1; rst_n = 1;
-    for (i = 0; i < 255; i = i + 1) begin
-      gezien[l] = 1'b1;
-      @(negedge clk);
-    end
-    check(l === 8'h01, "lfsr periode is 255");
-    check(gezien[0] === 1'b0, "lfsr komt nooit op 0");
-    check(&gezien[255:1], "lfsr bezoekt alle 255 niet-nul waarden");
-
-    if (fouten == 0) $display("PASS: register, shift, teller en LFSR kloppen");
-    $finish;
-  end
-endmodule
+```{.verilog include="week06/tb_regs.v"}
 ```
 
-```verilog
-// FILE: week06/tb_sync.v
-module tb_sync;
-  reg clk = 0, a = 0;
-  wire o;
-  integer fouten = 0;
-  sync2 u(clk, a, o);
-  always #5 clk = ~clk;
-  initial begin
-    @(negedge clk); a = 1;
-    @(negedge clk); if (o !== 1'bx && o !== 1'b0) begin fouten = fouten + 1; $display("FAIL: te snel"); end
-    @(negedge clk); if (o !== 1'b1) begin fouten = fouten + 1; $display("FAIL: o niet 1 na 2 flanken"); end
-    if (fouten == 0) $display("PASS: synchronizer vertraagt met twee klokflanken");
-    $finish;
-  end
-endmodule
+```{.verilog include="week06/tb_sync.v"}
 ```
 
 Draai ze:

@@ -1,4 +1,3 @@
-// FILE: beeld/tb_video_out.v
 `timescale 1ns/1ps
 // Schrijft een patroon rechtstreeks in het framebuffer (zonder CPU) en controleert elke pixel van het scherm.
 // De twee klokken zijn bewust niet gelijk en niet synchroon: 12 MHz voor het schrijven, 25,125 MHz voor het beeld.

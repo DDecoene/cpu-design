@@ -1,4 +1,3 @@
-// FILE: week07/traffic.v
 module traffic #(parameter G = 5, parameter Y = 2) (
   input        clk,
   input        rst_n,

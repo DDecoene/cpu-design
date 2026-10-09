@@ -1,4 +1,3 @@
-# FILE: tta_hw/split_rom.py
 """Splitst een TTA-programma (tta_asm.py maakt 24-bit-woorden in een .hex-bestand) in drie binaire bestanden van
 256 bytes, één per EEPROM: hoog (guard + bestemming), midden (bron) en laag (constante).
 Gebruik:  python3 split_rom.py programma.hex        ->  programma_hi.bin, programma_mid.bin, programma_lo.bin"""

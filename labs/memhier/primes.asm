@@ -1,4 +1,3 @@
-; FILE: cpu/primes.asm
 ; Zeef van Eratosthenes voor 2..99. Vlaggen op adres 100+n. R3 = aantal priemgetallen (25).
         LDI  R6, 100        ; basisadres van de vlaggen
         LDI  R3, 0          ; aantal priemgetallen

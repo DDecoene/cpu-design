@@ -1,4 +1,3 @@
-// FILE: week06/lfsr.v
 // 8-bit LFSR (linear feedback shift register): een pseudo-willekeurige reeks.
 // Taps op bit 8, 6, 5, 4 (positie 7, 5, 4, 3): de reeks doorloopt 255 verschillende waarden.
 module lfsr8(input clk, input rst_n, output reg [7:0] q);

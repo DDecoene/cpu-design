@@ -1,4 +1,3 @@
-// FILE: cpu_pipe/tb_compare.v
 // Draait hetzelfde programma op de W8 (twee cycli per instructie) en op de gepijplijnde W8P,
 // controleert dat het eindresultaat identiek is en meet de cycli.
 module pair #(parameter P = "", parameter D = "none", parameter DL = 0) (

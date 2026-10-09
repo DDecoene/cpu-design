@@ -1,4 +1,3 @@
-# FILE: beeld/mkbeeld.py
 #!/usr/bin/env python3
 """Maakt het beeld voor de beeldcomputer: 160 x 120 pixels, 16 kleuren, twee pixels per byte (de linker in de hoge nibble).
 

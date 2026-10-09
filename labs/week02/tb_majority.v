@@ -1,4 +1,3 @@
-// FILE: week02/tb_majority.v
 module tb_majority;
   reg a, b, c;
   wire y;

@@ -1,4 +1,3 @@
-# FILE: tta/run_tta.sh
 #!/bin/bash
 # Gebruik: bash run_tta.sh programma.tta [invoerwaarde]
 # Assembleert een TTA-programma en draait het in de simulator.

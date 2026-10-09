@@ -1,4 +1,3 @@
-// FILE: tt_t8/tb_core_equiv.v
 // De parametriseerbare kern (met PCW = 8, AW = 8) moet exact de machine uit week 19 zijn.
 // 300 willekeurige programma's, na elke klokcyclus vergeleken met tta.v.
 module tb_core_equiv;

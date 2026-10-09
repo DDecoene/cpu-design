@@ -1,4 +1,3 @@
-// FILE: week03/tb_bcd.v
 module tb_bcd;
   reg a, b, c, d;
   wire y1, y2;

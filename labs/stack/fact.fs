@@ -1,4 +1,3 @@
-\ FILE: stack/fact.fs
 \ Faculteit met recursie. mul is vermenigvuldigen met herhaald optellen.
 : mul ( a b -- a*b )
    0 SWAP                    \ a acc b

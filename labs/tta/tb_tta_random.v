@@ -1,4 +1,3 @@
-// FILE: tta/tb_tta_random.v
 // Willekeurige TTA-programma's tegen een referentiemodel (integers, geen hardwaretrucs).
 module tb_tta_random;
   reg clk = 0, rst_n = 0;

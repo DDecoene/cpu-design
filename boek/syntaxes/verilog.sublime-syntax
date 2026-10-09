@@ -1,0 +1,37 @@
+%YAML 1.2
+---
+# Eenvoudige kleuring voor Verilog en SystemVerilog in het boek.
+name: Verilog
+file_extensions: [v, vh, sv]
+scope: source.verilog
+contexts:
+  main:
+    - match: '//.*$'
+      scope: comment.line.double-slash.verilog
+    - match: '/\*'
+      push: blokcommentaar
+    - match: '"'
+      push: tekst
+    - match: '`[A-Za-z_]\w*'
+      scope: keyword.control.import.verilog
+    - match: '\$[A-Za-z_]\w*'
+      scope: support.function.verilog
+    - match: "\\b[0-9_]*'[sS]?[bBoOdDhH][0-9a-fA-FxXzZ_?]+"
+      scope: constant.numeric.verilog
+    - match: "'[01xXzZ]\\b"
+      scope: constant.numeric.verilog
+    - match: '\b[0-9][0-9_]*(\.[0-9]+)?\b'
+      scope: constant.numeric.verilog
+    - match: '\b(wire|reg|logic|integer|genvar|parameter|localparam|input|output|inout|signed|unsigned|bit|byte|int|tri|supply0|supply1)\b'
+      scope: storage.type.verilog
+    - match: '\b(module|endmodule|assign|always|always_ff|always_comb|always_latch|initial|begin|end|if|else|case|casez|casex|endcase|default|for|while|repeat|forever|function|endfunction|task|endtask|generate|endgenerate|posedge|negedge|or|and|not|wait|disable|fork|join|return|automatic|typedef|enum|struct|packed|unique|priority)\b'
+      scope: keyword.control.verilog
+  blokcommentaar:
+    - meta_scope: comment.block.verilog
+    - match: '\*/'
+      pop: true
+  tekst:
+    - meta_scope: string.quoted.double.verilog
+    - match: '\\.'
+    - match: '"'
+      pop: true

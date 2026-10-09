@@ -1,4 +1,3 @@
-// FILE: week08/regfile.v
 module regfile #(parameter DW = 8) (
   input           clk,
   input           we,

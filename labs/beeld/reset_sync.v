@@ -1,4 +1,3 @@
-// FILE: beeld/reset_sync.v
 // Een reset die asynchroon begint en synchroon eindigt: twee flipflops (week 6). Elk klokdomein krijgt er een.
 module reset_sync(
   input  clk,

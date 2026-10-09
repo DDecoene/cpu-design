@@ -1,4 +1,3 @@
-// FILE: beeld/tb_vga_sync.v
 // Controleert de VGA-timing met losse tellers die de getallen uit de specificatie letterlijk gebruiken.
 module tb_vga_sync;
   reg pclk = 0, rst_n = 0;

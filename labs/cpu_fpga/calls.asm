@@ -1,4 +1,3 @@
-; FILE: cpu/calls.asm
 ; Subroutines met CALL en RET. R7 bevat het terugkeeradres, dus een geneste aanroep moet het bewaren.
         LDI  R1, 3
         CALL kwadraat       ; R2 = R1 * R1 via herhaald optellen

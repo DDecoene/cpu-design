@@ -1,4 +1,3 @@
-# FILE: beeld_fpga/beeld_voorbeeld.pcf
 # Voorbeeld van een pinbestand voor nextpnr (iCE40). Kopieer naar beeld.pcf en vul de pinnen in uit het schema van je bord
 # en de handleidingen van je VGA- en microSD-module. De getallen ontbreken met opzet: ik heb geen van deze borden gebruikt.
 # Gebruik:  PCF=beeld.pcf bash flow.sh

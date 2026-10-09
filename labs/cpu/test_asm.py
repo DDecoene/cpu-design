@@ -1,4 +1,3 @@
-# FILE: cpu/test_asm.py
 # Tests voor de assembler: bekende codes, fouten, labels en negatieve getallen.
 from asm import assemble, AsmError
 

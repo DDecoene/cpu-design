@@ -1,4 +1,3 @@
-# FILE: tt_t8/chip_size.sh
 #!/bin/bash
 # Schat de grootte van de chip: Yosys zet het ontwerp om in eenvoudige poorten en flipflops, zoals voor een echte chip.
 # Er is hier geen echte celbibliotheek (SKY130) bij, dus dit is een SCHATTING in 'poorten', niet de uiteindelijke oppervlakte.

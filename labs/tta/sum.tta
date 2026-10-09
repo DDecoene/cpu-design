@@ -1,4 +1,3 @@
-; FILE: tta/sum.tta
 ; Som van 1 tot 10 met alleen moves. Uitvoer: 55.
         #0  -> R0           ; som
         #10 -> R1           ; teller

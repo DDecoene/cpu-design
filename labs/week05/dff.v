@@ -1,4 +1,3 @@
-// FILE: week05/dff.v
 // Een D-flipflop, zoals je hem in echte ontwerpen schrijft.
 module dff(input clk, input d, output reg q);
   always @(posedge clk)

@@ -1,4 +1,3 @@
-// FILE: beeld/spi_io.v
 // De registers van de SPI-poort, zoals de CPU ze ziet (adressen 0xFC tot en met 0xFE):
 //   0xFC  SPI_DATA    schrijven: begin een overdracht van dit byte; lezen: het laatst ontvangen byte
 //   0xFD  SPI_CTRL    bit 0 = CS (0 = kaart geselecteerd; na reset 1), bit 1 = snelle klok

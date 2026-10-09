@@ -1,4 +1,3 @@
-// FILE: week07/tb_traffic.v
 module tb_traffic;
   reg clk = 0, rst_n = 0;
   wire [1:0] ns, ew;

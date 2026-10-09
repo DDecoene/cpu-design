@@ -1,4 +1,3 @@
-// FILE: cpu_fpga/tb_f_compare.v
 // Dezelfde programma's op W8I (asynchroon RAM) en W8F (blok-RAM, LD in 3 cycli):
 // het resultaat moet identiek zijn, en W8F mag precies één cyclus per uitgevoerde LD langer doen.
 module pair_f #(parameter P = "", parameter D = "none", parameter DL = 0) (

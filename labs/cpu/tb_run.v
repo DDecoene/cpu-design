@@ -1,4 +1,3 @@
-// FILE: cpu/tb_run.v
 // Draait een geassembleerd programma op de CPU en toont het eindresultaat.
 // Gebruik (via run.sh): vvp w8run.vvp +prog=programma.hex [+data=programma.dat]
 module tb_run;

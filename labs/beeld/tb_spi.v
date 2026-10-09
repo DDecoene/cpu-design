@@ -1,4 +1,3 @@
-// FILE: beeld/tb_spi.v
 // Test van de SPI-master: bitvolgorde, klok in rust laag, 8 pulsen per byte, snelheid en het negeren van een schrijfactie tijdens een overdracht.
 // Een kleine slave in Verilog speelt de kaart: hij onthoudt wat hij ontvangt en antwoordt met vaste bytes.
 module spi_slave_sim(input sclk, input mosi, input cs_n, output miso);

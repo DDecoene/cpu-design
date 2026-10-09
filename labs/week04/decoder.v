@@ -1,4 +1,3 @@
-// FILE: week04/decoder.v
 module decoder3to8(
   input  [2:0] a,
   input        en,

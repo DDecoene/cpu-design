@@ -1,4 +1,3 @@
-// FILE: week05/tb_dff.v
 module tb_dff;
   reg clk = 0, rst_n = 1, d = 0;
   wire q1, q2;

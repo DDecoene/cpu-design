@@ -1,4 +1,3 @@
-// FILE: beeld/beeld_top.v
 // De complete beeldcomputer: CPU, SPI naar de SD-kaart, framebuffer en VGA-uitgang.
 // Het programma staat in boot.hex (instructies) en boot.dat (de commando's voor de kaart in het datageheugen).
 module beeld_top #(

@@ -1,4 +1,3 @@
-// FILE: week01/tb_inverter.v
 // Een testbench: een "virtuele proefopstelling" die onze inverter test.
 module tb_inverter;
   reg  a;

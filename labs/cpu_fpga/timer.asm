@@ -1,4 +1,3 @@
-; FILE: cpu_irq/timer.asm
 ; Een timer-interrupt tijdens een rekenlus. R6 is gereserveerd voor de interruptroutine.
 ; De hoofdlus telt 1+2+...+200 (modulo 256 = 132). De routine telt op adres 0x20 hoe vaak hij draaide.
         B    main

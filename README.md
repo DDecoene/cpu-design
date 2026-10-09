@@ -27,17 +27,28 @@ De bijlagen bevatten een Verilog-spiekbrief, de instructiesets, een chiplijst, f
 
 | Map of bestand | Inhoud |
 |----------------|--------|
-| `src/` | de bron van alle hoofdstukken (Markdown) |
-| `labs/` | de code uit de hoofdstukken, per week of per project |
-| `extract_labs.py` | haalt de code uit `src/` en draait alle tests |
-| `build.sh` | bouwt de PDF's opnieuw |
+| `src/` | de tekst van alle hoofdstukken (Markdown) |
+| `labs/` | alle code, per week of per project; het boek neemt zijn listings hieruit over |
+| `boek/` | de opmaak van het boek: Typst-sjabloon, pandoc-filter, kleuring en letters |
+| `test_labs.py` | draait alle tests |
+| `build.py` | bouwt het boek |
 | `.devcontainer/` | een werkomgeving met alle tools (Codespaces of VS Code) |
 
-De PDF's staan niet in de repo maar bij de [Releases](../../releases): `00_syllabus.pdf`, `week01.pdf` t/m `week30.pdf` en `99_bijlagen.pdf`, ook als een zip. Begin met de syllabus: die beschrijft de werkwijze en welke software en onderdelen je nodig hebt. Wil je liever zelf bouwen, zie hieronder.
+Het boek staat niet in de repo maar bij de [Releases](../../releases), in drie PDF's:
+
+| Bestand | Voor |
+|---------|------|
+| `cpu-design-cursus.pdf` | het scherm: alles in één bestand, met klikbare inhoud, verwijzingen en webadressen |
+| `cpu-design-cursus-print.pdf` | afdrukken: recto-verso op A4, met een bredere binnenmarge voor een ringmap; elk hoofdstuk begint op een rechterpagina |
+| `cpu-design-cursus-codeboek-print.pdf` | afdrukken: de lange listings, als tweede map naast het boek |
+
+Korte listings staan in de tekst. Een lange listing (meer dan 40 regels) staat in het codeboek; in de tekst staat op die plaats een verwijzing. De antwoorden op de oefeningen en de zelftests staan achteraan in het boek.
+
+Begin met het hoofdstuk Welkom: dat beschrijft de werkwijze en welke software en onderdelen je nodig hebt. Wil je liever zelf bouwen, zie hieronder.
 
 ## Werkomgeving in een container
 
-De map `.devcontainer/` beschrijft een kant-en-klare omgeving. Open de repo in GitHub Codespaces of in VS Code met de Dev Containers-extensie ("Reopen in Container"). Daarin staan Icarus Verilog, Python, Yosys en nextpnr (als YoWASP in `~/fpga-venv`, zoals week 23 beschrijft), pandoc en Chromium klaar, plus de VS Code-extensies voor Verilog en Surfer (golfvormen). Bij het aanmaken draait de container meteen `extract_labs.py`.
+De map `.devcontainer/` beschrijft een kant-en-klare omgeving. Open de repo in GitHub Codespaces of in VS Code met de Dev Containers-extensie ("Reopen in Container"). Daarin staan Icarus Verilog, Python, Yosys en nextpnr (als YoWASP in `~/fpga-venv`, zoals week 23 beschrijft), pandoc en Typst klaar, plus de VS Code-extensies voor Verilog en Surfer (golfvormen). Bij het aanmaken draait de container meteen `test_labs.py`.
 
 KiCad (week 25) en het programmeren van een echt FPGA-bord zitten er niet in: daarvoor heb je je eigen computer nodig.
 
@@ -46,26 +57,36 @@ KiCad (week 25) en het programmeren van een echt FPGA-bord zitten er niet in: da
 Je hebt [Icarus Verilog](https://steveicarus.github.io/iverilog/) en Python 3 nodig.
 
 ```text
-python3 extract_labs.py            # alle tests (74)
-python3 extract_labs.py 04 cpu     # alleen labs/week04 en labs/cpu
+python3 test_labs.py            # alle tests (74)
+python3 test_labs.py 04 cpu     # alleen labs/week04 en labs/cpu
 ```
 
-## De PDF's bouwen
+## Het boek bouwen
 
-Bij elke release bouwt GitHub Actions de PDF's automatisch (`.github/workflows/release.yml`). Zelf bouwen kan ook.
+Bij elke push bouwt GitHub Actions het boek (`.github/workflows/release.yml`); bij een tag komen de PDF's bij de release. Zelf bouwen kan ook.
 
-Je hebt [pandoc](https://pandoc.org/) en Google Chrome of Chromium nodig.
+Je hebt [pandoc](https://pandoc.org/) 3.1 of nieuwer en [Typst](https://typst.app/) 0.13 nodig. In de container staan ze al klaar.
 
 ```text
-./build.sh                 # alle hoofdstukken
-./build.sh src/week01.md   # een enkel hoofdstuk
-CHROME=/pad/naar/chrome ./build.sh   # als Chrome ergens anders staat
+./build.py            # alle drie de PDF's (ongeveer een halve minuut)
+./build.py scherm     # alleen de schermversie
 ```
+
+Zo werkt het: `build.py` zet elk hoofdstuk uit `src/` met pandoc en `boek/filter.lua` om naar Typst, en Typst zet het boek met het sjabloon `boek/boek.typ`.
+
+Code staat nooit in de tekst zelf. Een hoofdstuk verwijst naar een bestand in `labs/`, en het boek neemt het over:
+
+````text
+```{.verilog include="cpu/alu.v"}
+```
+````
+
+Zo is de code in het boek altijd dezelfde als de geteste code. Langer dan 40 regels gaat naar het codeboek. Met de klasse `.volledig` blijft een lange listing toch in de tekst. Met `van=12 tot=30` toon je alleen die regels in de tekst; het hele bestand komt dan in het codeboek.
 
 ## Stand van zaken
 
 - De Verilog-ontwerpen worden gesimuleerd met Icarus Verilog en de Python-hulpmiddelen worden getest.
-  Alle 74 tests in `extract_labs.py` slagen.
+  Alle 74 tests in `test_labs.py` slagen.
 - De synthese en place-and-route in week 23 en 24 zijn met Yosys en nextpnr uitgevoerd. De bijbehorende
   getallen (LUT's, frequenties) komen uit die runs.
 - De beeldcomputer van week 27 tot 30 is gesimuleerd (virtuele VGA-monitor, SD-kaartmodel) en met Yosys en nextpnr gesynthetiseerd voor een iCE40 UP5K (1 407 van 5 280 logische cellen, 20 van 30 blok-RAM's, de klokken met marge). De pinbestanden zijn niet ingevuld en alles is nooit op een bord uitgeprobeerd.

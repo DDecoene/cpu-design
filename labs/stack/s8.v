@@ -1,4 +1,3 @@
-// FILE: stack/s8.v
 // S8: een stackmachine in de geest van Forth.
 // Twee stapels (data en terugkeer) van 16 bytes, programmageheugen en datageheugen van 256 bytes.
 // Bit 7 = 1: literal (waarde 0..127). Anders is het een opcode van 6 bit.

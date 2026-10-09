@@ -1,4 +1,3 @@
-// FILE: week02/nand_cmos.v
 // NAND-poort uit 4 transistoren (2 PMOS parallel, 2 NMOS in serie).
 module nand_cmos(input a, input b, output y);
   supply1 vdd;        // de plusspanning

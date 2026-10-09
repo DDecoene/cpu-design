@@ -1,4 +1,3 @@
-\ FILE: stack/sum.fs
 \ Som van 1 tot n.
 : som ( n -- s )
    0 SWAP                    \ acc n

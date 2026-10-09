@@ -1,4 +1,3 @@
-// FILE: beeld/tb_video_io.v
 // De videoregisters via de buslijnen van de CPU: adres instellen, auto-increment, grens bij 9600 en de vblank-status.
 module tb_video_io;
   reg clk = 0, rst_n = 0, sel = 0, we = 0, vb = 0;

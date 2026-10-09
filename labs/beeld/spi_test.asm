@@ -1,4 +1,3 @@
-; FILE: beeld/spi_test.asm
 ; Test van de SPI-poort met een lus: de testbench verbindt MISO met MOSI, dus elk verzonden byte moet terugkomen.
 ; Het programma verstuurt 8 bytes, telt hoeveel er goed terugkomen en zet dat aantal op de GPIO-uitgang.
         LDI  R3, 0xF0           ; basisadres van de apparaten

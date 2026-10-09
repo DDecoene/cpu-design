@@ -1,4 +1,3 @@
-// FILE: week06/tb_sync.v
 module tb_sync;
   reg clk = 0, a = 0;
   wire o;

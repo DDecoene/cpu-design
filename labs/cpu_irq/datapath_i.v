@@ -1,4 +1,3 @@
-// FILE: cpu_irq/datapath_i.v
 // Het datapath: PC, instructieregister, registerbestand, ALU, vlaggen.
 // Alle besturingssignalen komen van buiten (de besturingseenheid).
 module datapath_i #(parameter VECTOR = 8'h02) (

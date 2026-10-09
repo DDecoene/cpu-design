@@ -14,9 +14,6 @@ title: "Week 29 · SPI: praten met de buitenwereld"
 - een SPI-poort aan de CPU hangen als geheugengemapt apparaat en er een programma voor schrijven
 - een testbench schrijven met een slave-model dat zelf de regels van het protocol bewaakt
 
-<!-- COPYSED beeld/cpu_v.v beeld/cpu_b.v "// FILE: beeld/cpu_v.v"=>"// FILE: beeld/cpu_b.v" "module cpu_v #("=>"module cpu_b #(" "output [7:0]  fb_wdata"=>"output [7:0]  fb_wdata,
-  output        spi_sclk, spi_mosi, spi_cs_n,
-  input         spi_miso" "mmio_v #("=>"mmio_b #(" "fb_waddr, fb_wdata);"=>"fb_waddr, fb_wdata, spi_sclk, spi_mosi, spi_cs_n, spi_miso);" -->
 
 ## 1. Wat is SPI?
 
@@ -79,53 +76,7 @@ Het is belangrijk dat de master MOSI **niet** verandert op de stijgende flank, w
 
 Twee snelheden. De SD-specificatie vraagt tijdens het opstarten een klok van hoogstens 400 kHz, daarna mag het veel sneller. De klokdeler telt `HALF_SLOW = 16` klokken per halve periode bij het opstarten (12 MHz / 32 = 375 kHz) en `HALF_FAST = 2` daarna (12 MHz / 4 = 3 MHz).
 
-```verilog
-// FILE: beeld/spi_master.v
-// SPI-master, modus 0: de klok is in rust laag, de data wordt op de stijgende flank gelezen en na de dalende flank veranderd.
-// Een SD-kaart praat zo. Eerst de hoogste bit (MSB first). Twee snelheden: langzaam voor het opstarten van de kaart
-// (de SD-specificatie vraagt maximaal 400 kHz) en snel voor het lezen.
-module spi_master #(
-  parameter HALF_SLOW = 16,        // klokcycli per halve SCLK-periode, langzaam
-  parameter HALF_FAST = 2          // idem, snel
-) (
-  input        clk,
-  input        rst_n,
-  input        start,              // een klok lang 1: begin een overdracht
-  input  [7:0] tx,                 // het byte dat verstuurd wordt
-  input        fast,               // 0 = langzaam, 1 = snel
-  output reg [7:0] rx,             // het ontvangen byte, geldig als busy weer 0 is
-  output       busy,
-  output reg   sclk,
-  output       mosi,
-  input        miso
-);
-  reg [7:0] sh;                    // schuifregister: bits gaan er boven uit, ontvangen bits komen eronder in
-  reg [3:0] n;                     // aantal bits dat nog moet
-  reg [7:0] cnt;                   // telt de halve SCLK-periode af
-  reg       hoog;                  // 0: SCLK is laag (wacht op de stijgende flank), 1: SCLK is hoog
-  reg       miso_s;                // het op de stijgende flank gelezen bit
-
-  assign mosi = sh[7];
-  assign busy = (n != 0);
-  wire [7:0] half = fast ? HALF_FAST - 1 : HALF_SLOW - 1;
-
-  always @(posedge clk or negedge rst_n)
-    if (!rst_n) begin sclk <= 1'b0; sh <= 8'hFF; n <= 4'd0; cnt <= 8'd0; hoog <= 1'b0; miso_s <= 1'b1; rx <= 8'hFF; end
-    else if (!busy) begin
-      if (start) begin sh <= tx; n <= 4'd8; cnt <= half; hoog <= 1'b0; end
-    end else if (cnt != 0) cnt <= cnt - 8'd1;
-    else begin
-      cnt <= half;
-      if (!hoog) begin                       // stijgende flank: de kaart leest MOSI, wij lezen MISO
-        sclk <= 1'b1; hoog <= 1'b1; miso_s <= miso;
-      end else begin                         // dalende flank: schuif door naar het volgende bit
-        sclk <= 1'b0; hoog <= 1'b0;
-        sh <= {sh[6:0], miso_s};
-        n <= n - 4'd1;
-        if (n == 4'd1) rx <= {sh[6:0], miso_s};
-      end
-    end
-endmodule
+```{.verilog include="beeld/spi_master.v"}
 ```
 
 Een paar ontwerpkeuzes:
@@ -146,87 +97,14 @@ De CPU ziet de SPI-poort als drie geheugenplaatsen:
 
 Chip select is een bit dat de software zet en niet een deel van de overdracht. Dat lijkt onhandig, maar een SD-kaart verwacht dat CS laag blijft gedurende een heel commando van meerdere bytes (6 bytes commando, dan het antwoord, en bij lezen nog 512 bytes data). Een master die CS bij elk byte op- en neerhaalt zou dat verbreken.
 
-```verilog
-// FILE: beeld/spi_io.v
-// De registers van de SPI-poort, zoals de CPU ze ziet (adressen 0xFC tot en met 0xFE):
-//   0xFC  SPI_DATA    schrijven: begin een overdracht van dit byte; lezen: het laatst ontvangen byte
-//   0xFD  SPI_CTRL    bit 0 = CS (0 = kaart geselecteerd; na reset 1), bit 1 = snelle klok
-//   0xFE  SPI_STATUS  lezen: bit 0 = bezig
-module spi_io(
-  input        clk,
-  input        rst_n,
-  input        sel,                // het adres ligt in 0xFC tot 0xFF
-  input        we,
-  input  [1:0] reg_sel,
-  input  [7:0] wdata,
-  output reg [7:0] rdata,
-  output       sclk, mosi,
-  output       cs_n,
-  input        miso
-);
-  reg [1:0] ctrl;
-  wire [7:0] rx;
-  wire busy;
-  wire start = we && sel && reg_sel == 2'd0 && !busy;      // een byte schrijven terwijl de poort bezig is, doet niets
-
-  spi_master sm(.clk(clk), .rst_n(rst_n), .start(start), .tx(wdata), .fast(ctrl[1]), .rx(rx), .busy(busy),
-                .sclk(sclk), .mosi(mosi), .miso(miso));
-  assign cs_n = ctrl[0];
-
-  always @(posedge clk or negedge rst_n)
-    if (!rst_n) ctrl <= 2'b01;                              // niet geselecteerd, langzaam
-    else if (we && sel && reg_sel == 2'd1) ctrl <= wdata[1:0];
-
-  always @* case (reg_sel)
-    2'd0:    rdata = rx;
-    2'd1:    rdata = {6'b0, ctrl};
-    2'd2:    rdata = {7'b0, busy};
-    default: rdata = 8'h00;
-  endcase
-endmodule
+```{.verilog include="beeld/spi_io.v"}
 ```
 
 ## 4. Nog een laagje
 
 Net als vorige week leggen we er een laagje omheen in plaats van `mmio_v` te veranderen. `mmio_b` bevat een `mmio_v` en een `spi_io`, en kijkt naar de bovenste zes adresbits: `111111` is `0xFC` tot en met `0xFF`, en alles daaronder gaat naar `mmio_v`. De CPU is daarmee een derde keer uitgebreid zonder dat het origineel is aangeraakt, en `cpu_b` ontstaat op dezelfde manier uit `cpu_v` als `cpu_v` uit `cpu_f`.
 
-```verilog
-// FILE: beeld/mmio_b.v
-// De geheugenkaart met video en SPI: mmio_v met de SPI-poort op 0xFC tot 0xFF erbij.
-module mmio_b #(parameter DIV = 16, parameter TDIV = 1, parameter DATA = "data.hex", parameter DLOAD = 0) (
-  input        clk,
-  input        rst_n,
-  input        we,
-  input        rd,
-  input  [7:0] addr,
-  input  [7:0] wdata,
-  output [7:0] rdata,
-  output       txd,
-  input        rxd,
-  input  [7:0] gpio_in,
-  output [7:0] gpio_out,
-  output       irq,
-  input        vblank,
-  output       fb_we,
-  output [13:0] fb_waddr,
-  output [7:0]  fb_wdata,
-  output       spi_sclk, spi_mosi, spi_cs_n,
-  input        spi_miso
-);
-  wire [7:0] v_rdata, s_comb;
-  mmio_v #(DIV, TDIV, DATA, DLOAD) basis(.clk(clk), .rst_n(rst_n), .we(we), .rd(rd), .addr(addr), .wdata(wdata), .rdata(v_rdata),
-                                         .txd(txd), .rxd(rxd), .gpio_in(gpio_in), .gpio_out(gpio_out), .irq(irq),
-                                         .vblank(vblank), .fb_we(fb_we), .fb_waddr(fb_waddr), .fb_wdata(fb_wdata));
-
-  wire ssel = (addr[7:2] == 6'b111111);                      // 0xFC tot 0xFF
-  spi_io sio(.clk(clk), .rst_n(rst_n), .sel(ssel), .we(we), .reg_sel(addr[1:0]), .wdata(wdata), .rdata(s_comb),
-             .sclk(spi_sclk), .mosi(spi_mosi), .cs_n(spi_cs_n), .miso(spi_miso));
-
-  reg [7:0] s_q;
-  reg       ssel_q;
-  always @(posedge clk) begin s_q <= s_comb; ssel_q <= ssel; end
-  assign rdata = ssel_q ? s_q : v_rdata;
-endmodule
+```{.verilog include="beeld/mmio_b.v"}
 ```
 
 De hele geheugenkaart van de beeldcomputer ziet er nu zo uit:
@@ -254,111 +132,7 @@ De hele geheugenkaart van de beeldcomputer ziet er nu zo uit:
 
 Een SPI-master controleer je tegen iets dat de regels kent. We schrijven een slave in Verilog die zich gedraagt als een kaart: hij leest MOSI op de stijgende flank, zet MISO na de dalende flank, onthoudt wat hij ontving en antwoordt met vaste bytes. Zo test de bench beide richtingen en let de slave zelf op het protocol.
 
-```verilog
-// FILE: beeld/tb_spi.v
-// Test van de SPI-master: bitvolgorde, klok in rust laag, 8 pulsen per byte, snelheid en het negeren van een schrijfactie tijdens een overdracht.
-// Een kleine slave in Verilog speelt de kaart: hij onthoudt wat hij ontvangt en antwoordt met vaste bytes.
-module spi_slave_sim(input sclk, input mosi, input cs_n, output miso);
-  reg [7:0] antw [0:15];
-  reg [7:0] kreeg [0:15];
-  reg [7:0] in_sh = 0, out_sh = 8'hFF;
-  integer nb = 0, bit_n = 0, pulsen = 0;
-  assign miso = cs_n ? 1'b1 : out_sh[7];
-  always @(negedge cs_n) begin bit_n = 0; out_sh = antw[nb]; end            // het eerste bit staat klaar vóór de eerste stijgende flank
-  always @(posedge sclk) if (!cs_n) begin
-    pulsen = pulsen + 1;
-    in_sh = {in_sh[6:0], mosi};                                             // de slave leest MOSI op de stijgende flank
-    bit_n = bit_n + 1;
-    if (bit_n == 8) begin kreeg[nb] = in_sh; nb = nb + 1; bit_n = 0; end
-  end
-  always @(negedge sclk) if (!cs_n) begin                                   // en verandert MISO na de dalende flank
-    if (bit_n == 0) out_sh = antw[nb]; else out_sh = {out_sh[6:0], 1'b1};
-  end
-endmodule
-
-module tb_spi;
-  reg clk = 0, rst_n = 0, sel = 0, we = 0, loop = 0;
-  reg [1:0] reg_sel = 0;
-  reg [7:0] wdata = 0;
-  wire [7:0] rdata;
-  wire sclk, mosi, cs_n, slave_miso;
-  wire miso = loop ? mosi : slave_miso;
-  integer fouten = 0, i, t0, t1, rise1, rise2, pulsen_start;
-  reg [7:0] v;
-
-  spi_io dut(.clk(clk), .rst_n(rst_n), .sel(sel), .we(we), .reg_sel(reg_sel), .wdata(wdata), .rdata(rdata),
-             .sclk(sclk), .mosi(mosi), .cs_n(cs_n), .miso(miso));
-  spi_slave_sim slave(.sclk(sclk), .mosi(mosi), .cs_n(cs_n), .miso(slave_miso));
-  always #5 clk = ~clk;
-
-  integer klokken = 0;
-  always @(posedge clk) klokken = klokken + 1;
-
-  task schrijf(input [1:0] r, input [7:0] d);
-    begin @(negedge clk); sel = 1; we = 1; reg_sel = r; wdata = d; @(negedge clk); sel = 0; we = 0; end
-  endtask
-  task lees(input [1:0] r, output [7:0] d);
-    begin @(negedge clk); sel = 1; reg_sel = r; #1 d = rdata; @(negedge clk); sel = 0; end
-  endtask
-  task wacht_klaar;
-    begin lees(2, v); while (v[0]) lees(2, v); end
-  endtask
-  task zend(input [7:0] d, output [7:0] ontvangen);
-    begin schrijf(0, d); wacht_klaar; lees(0, ontvangen); end
-  endtask
-
-  initial begin
-    slave.antw[0] = 8'h11; slave.antw[1] = 8'hA5; slave.antw[2] = 8'h00; slave.antw[3] = 8'hFF; slave.antw[4] = 8'h5A;
-    #22 rst_n = 1;
-    if (cs_n !== 1'b1 || sclk !== 1'b0) begin fouten = fouten + 1; $display("FAIL: na reset moet CS hoog en SCLK laag zijn"); end
-
-    // --- langzaam: vier bytes met de slave ---
-    schrijf(1, 8'h00);                                       // CS laag, langzaam
-    zend(8'hA5, v); if (v !== 8'h11) begin fouten = fouten + 1; $display("FAIL: byte 1 ontvangen %h, verwacht 11", v); end
-    zend(8'h3C, v); if (v !== 8'hA5) begin fouten = fouten + 1; $display("FAIL: byte 2 ontvangen %h, verwacht A5", v); end
-    zend(8'h00, v); if (v !== 8'h00) begin fouten = fouten + 1; $display("FAIL: byte 3 ontvangen %h, verwacht 00", v); end
-    zend(8'hFF, v); if (v !== 8'hFF) begin fouten = fouten + 1; $display("FAIL: byte 4 ontvangen %h, verwacht FF", v); end
-    if (slave.kreeg[0] !== 8'hA5 || slave.kreeg[1] !== 8'h3C || slave.kreeg[2] !== 8'h00 || slave.kreeg[3] !== 8'hFF) begin
-      fouten = fouten + 1; $display("FAIL: de slave ontving %h %h %h %h", slave.kreeg[0], slave.kreeg[1], slave.kreeg[2], slave.kreeg[3]);
-    end
-    if (slave.pulsen !== 32) begin fouten = fouten + 1; $display("FAIL: %0d SCLK-pulsen voor 4 bytes, verwacht 32", slave.pulsen); end
-
-    // --- klokperiode meten: langzaam 32 klokken, snel 4 klokken ---
-    schrijf(0, 8'h55);
-    @(posedge sclk); rise1 = klokken; @(posedge sclk); rise2 = klokken;
-    if (rise2 - rise1 !== 32) begin fouten = fouten + 1; $display("FAIL: langzame SCLK-periode is %0d klokken, verwacht 32", rise2 - rise1); end
-    wacht_klaar;
-    schrijf(1, 8'h02);                                       // CS laag, snel
-    schrijf(0, 8'h55);
-    @(posedge sclk); rise1 = klokken; @(posedge sclk); rise2 = klokken;
-    if (rise2 - rise1 !== 4) begin fouten = fouten + 1; $display("FAIL: snelle SCLK-periode is %0d klokken, verwacht 4", rise2 - rise1); end
-    wacht_klaar;
-
-    // --- een schrijfactie tijdens een overdracht wordt genegeerd ---
-    pulsen_start = slave.pulsen;
-    schrijf(0, 8'h81);
-    schrijf(0, 8'hFE);                                       // dit byte mag niet starten
-    wacht_klaar; repeat (10) @(negedge clk);
-    if (slave.pulsen - pulsen_start !== 8) begin fouten = fouten + 1; $display("FAIL: %0d pulsen, verwacht 8: de tweede schrijfactie had genegeerd moeten worden", slave.pulsen - pulsen_start); end
-
-    // --- willekeurige bytes via een lus (MISO = MOSI) in beide snelheden ---
-    loop = 1;
-    for (i = 0; i < 100; i = i + 1) begin
-      if (i == 50) schrijf(1, 8'h00);                        // vanaf nu langzaam
-      zend($random, v);
-      if (v !== wdata) begin fouten = fouten + 1; $display("FAIL: lus: verstuurd %h, ontvangen %h", wdata, v); end
-    end
-    loop = 0;
-
-    // --- CS ---
-    schrijf(1, 8'h01);
-    if (cs_n !== 1'b1) begin fouten = fouten + 1; $display("FAIL: CS moet hoog zijn"); end
-    schrijf(1, 8'h00);
-    if (cs_n !== 1'b0) begin fouten = fouten + 1; $display("FAIL: CS moet laag zijn"); end
-    if (fouten == 0) $display("PASS: SPI-master: bitvolgorde, modus 0, 8 pulsen per byte, perioden 32 en 4, CS en negeren tijdens een overdracht");
-    $finish;
-  end
-endmodule
+```{.verilog include="beeld/tb_spi.v"}
 ```
 
 De test controleert niet alleen of de bytes aankomen, maar ook het gedrag eromheen:
@@ -371,62 +145,10 @@ De test controleert niet alleen of de bytes aankomen, maar ook het gedrag eromhe
 
 Daarna de CPU zelf. Dit programma verstuurt 8 bytes met MISO en MOSI doorverbonden, en telt hoeveel er goed terugkomen:
 
-```text
-; FILE: beeld/spi_test.asm
-; Test van de SPI-poort met een lus: de testbench verbindt MISO met MOSI, dus elk verzonden byte moet terugkomen.
-; Het programma verstuurt 8 bytes, telt hoeveel er goed terugkomen en zet dat aantal op de GPIO-uitgang.
-        LDI  R3, 0xF0           ; basisadres van de apparaten
-        LDI  R0, 2
-        ST   R0, [R3+13]        ; SPI_CTRL: CS = 0 (geselecteerd), snelle klok
-        LDI  R2, 0              ; aantal goed ontvangen bytes
-        LDI  R4, 0x5A           ; eerste testbyte
-        LDI  R6, 8              ; aantal bytes
-lus:    ST   R4, [R3+12]        ; SPI_DATA: begin de overdracht
-wacht:  LD   R0, [R3+14]        ; SPI_STATUS
-        CMPI R0, 0
-        BNE  wacht              ; wacht tot de poort klaar is
-        LD   R0, [R3+12]        ; SPI_DATA: het ontvangen byte
-        CMP  R0, R4
-        BNE  mis
-        ADDI R2, 1
-mis:    ADDI R4, 0x13           ; volgend testbyte
-        ADDI R6, -1
-        BNE  lus
-        LDI  R0, 3
-        ST   R0, [R3+13]        ; CS weer hoog
-        ST   R2, [R3+5]         ; GPIO: het aantal goede bytes
-        HALT
+```{.text include="beeld/spi_test.asm"}
 ```
 
-```verilog
-// FILE: beeld/tb_spi_cpu.v
-// De CPU stuurt de SPI-poort aan (MISO verbonden met MOSI) en meldt via de GPIO hoeveel bytes goed terugkwamen.
-module tb_spi_cpu;
-  reg clk = 0, rst_n = 0;
-  wire halted, txd, sclk, mosi, cs_n, fb_we;
-  wire [7:0] gpio;
-  wire [13:0] fb_waddr;
-  wire [7:0] fb_wdata;
-  integer fouten = 0, pulsen = 0, cs_laag = 0;
-
-  cpu_b #("spi_test.hex", 1, 16) dut(.clk(clk), .rst_n(rst_n), .halted(halted), .txd(txd), .rxd(1'b1), .gpio_in(8'h00), .gpio_out(gpio),
-                                     .vblank(1'b0), .fb_we(fb_we), .fb_waddr(fb_waddr), .fb_wdata(fb_wdata),
-                                     .spi_sclk(sclk), .spi_mosi(mosi), .spi_cs_n(cs_n), .spi_miso(mosi));
-  always #5 clk = ~clk;
-  always @(posedge sclk) pulsen = pulsen + 1;
-  always @(posedge clk) if (!cs_n) cs_laag = cs_laag + 1;
-
-  initial begin
-    #22 rst_n = 1;
-    wait (halted);
-    if (gpio !== 8'd8) begin fouten = fouten + 1; $display("FAIL: %0d van 8 bytes kwamen goed terug", gpio); end
-    if (pulsen !== 64) begin fouten = fouten + 1; $display("FAIL: %0d SCLK-pulsen, verwacht 64", pulsen); end
-    if (cs_n !== 1'b1) begin fouten = fouten + 1; $display("FAIL: CS moet aan het eind weer hoog zijn"); end
-    if (fb_we) begin fouten = fouten + 1; $display("FAIL: er mag niets naar het framebuffer gaan"); end
-    if (fouten == 0) $display("PASS: de CPU verstuurt 8 bytes via SPI en ontvangt ze terug (%0d klokken met CS laag)", cs_laag);
-    $finish;
-  end
-endmodule
+```{.verilog include="beeld/tb_spi_cpu.v"}
 ```
 
 ### Streng genoeg?
@@ -446,7 +168,7 @@ Dat is de snelheid van de lijn, niet van het programma. De CPU moet na elk byte 
 
 ## 7. Lab
 
-1. Draai de tests van fase 7 (`python3 extract_labs.py beeld`) en zoek de PASS-regels van `tb_spi` en `tb_spi_cpu`.
+1. Draai de tests van fase 7 (`python3 test_labs.py beeld`) en zoek de PASS-regels van `tb_spi` en `tb_spi_cpu`.
 2. Zet in `spi_master.v` de waarde van `HALF_SLOW` op 15. Welke frequentie geeft dat, en waarom kiezen we toch liever 16? Welke test faalt?
 3. Open een golfvorm van `tb_spi` (voeg `$dumpfile` en `$dumpvars` toe) en zoek de plek waar MOSI verandert. Verandert hij op de dalende flank van SCLK, zoals het hoort?
 4. Verander in `spi_test.asm` de testbytes en laat de tests slagen. Verwissel dan `CMP R0, R4` voor `CMP R0, R2` en kijk wat de test zegt.

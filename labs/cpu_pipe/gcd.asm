@@ -1,4 +1,3 @@
-; FILE: cpu/gcd.asm
 ; Grootste gemene deler van 252 en 105 (Euclides met aftrekken). Resultaat in R1 (21).
         LDI  R1, 252
         LDI  R2, 105

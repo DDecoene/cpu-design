@@ -1,4 +1,3 @@
-// FILE: week06/shift.v
 // Serieel-in, parallel-uit schuifregister.
 module shift_reg #(parameter W = 8) (
   input          clk,

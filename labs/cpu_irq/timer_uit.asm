@@ -1,4 +1,3 @@
-; FILE: cpu_irq/timer_uit.asm
 ; Dezelfde rekenlus, zonder timer: de referentie. Het resultaat moet gelijk zijn aan dat van timer.asm.
         B    main
         .org 2

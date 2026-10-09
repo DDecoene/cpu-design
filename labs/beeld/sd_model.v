@@ -1,4 +1,3 @@
-// FILE: beeld/sd_model.v
 // Een SD-kaart in SPI-modus, alleen voor simulatie. Hij kent precies de commando's die ons bootprogramma nodig heeft:
 //   CMD0  (reset)               -> R1 = 0x01 (idle)         vereist de CRC 0x95
 //   CMD8  (spanning/versie)     -> R1 = 0x01 + 4 bytes      vereist argument 0x1AA en CRC 0x87

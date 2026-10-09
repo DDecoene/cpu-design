@@ -1,4 +1,3 @@
-// FILE: beeld/beeld_v.v
 // CPU en beeld aan elkaar: de W8F met het framebuffer en de VGA-uitgang. Twee klokken: clk voor de CPU, pclk voor het beeld.
 module beeld_v #(
   parameter PROG = "prog.hex", parameter DATA = "data.hex", parameter DLOAD = 0,

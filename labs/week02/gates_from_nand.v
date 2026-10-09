@@ -1,4 +1,3 @@
-// FILE: week02/gates_from_nand.v
 // Alle andere poorten, uitsluitend gebouwd uit nand2.
 module not_n(input a, output y);
   nand2 g(a, a, y);

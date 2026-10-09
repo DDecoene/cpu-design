@@ -1,4 +1,3 @@
-// FILE: tta/tb_tta.v
 // Slaat de uitvoer van een T8 op.
 module outlog(input clk, input valid, input [7:0] data);
   reg [7:0] v [0:63];

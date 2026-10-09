@@ -1,4 +1,3 @@
-// FILE: tta_hw/hc74xx.v
 `timescale 1ns/1ps
 `ifndef DSCALE
   `define DSCALE 1.0                // schaalfactor voor alle vertragingen: 0.5 = snelle chips, 2.0 = trage chips

@@ -1,4 +1,3 @@
-; FILE: cpu_irq/uart_irq.asm
 ; Ontvang bytes via een interrupt. De routine zet elke ontvangen byte in een buffer vanaf 0x30
 ; en telt op adres 0x21. De hoofdlus wacht tot er 3 bytes binnen zijn.
         B    main

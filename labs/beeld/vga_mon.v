@@ -1,4 +1,3 @@
-// FILE: beeld/vga_mon.v
 // Een virtuele monitor, alleen voor simulatie. Hij kijkt, net als een echte monitor, alleen naar de syncpulsen en bepaalt daaruit
 // waar de pixels liggen: het beeld begint 144 pixels na het begin van de horizontale sync (96 sync + 48 back porch)
 // en 35 lijnen na het begin van de verticale sync (2 sync + 33 back porch).

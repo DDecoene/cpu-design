@@ -18,33 +18,37 @@ jobs:
       - name: Installeer Icarus Verilog
         run: sudo apt-get update && sudo apt-get install -y iverilog
       - name: Draai alle labtests
-        run: python3 extract_labs.py
+        run: python3 test_labs.py
 
-  release:
-    # Alleen bij een tag zoals v1.0.0: bouw de PDF's en zet ze bij de release.
-    if: startsWith(github.ref, 'refs/tags/v')
+  boek:
+    # Bouwt het boek bij elke push (te downloaden als artefact).
+    # Bij een tag zoals v1.0.0 komen de PDF's ook bij een release.
     needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Installeer pandoc en Chrome
+        with:
+          fetch-depth: 0   # git describe heeft de tags nodig voor het versienummer
+      - name: Installeer pandoc en Typst
+        # vaste versies, zodat het boek er bij elke release hetzelfde uitziet
         run: |
-          sudo apt-get update
-          sudo apt-get install -y pandoc
-          wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-          sudo apt-get install -y ./google-chrome-stable_current_amd64.deb
-      - name: Bouw de PDF's
-        run: ./build.sh
-        env:
-          CHROME_FLAGS: --no-sandbox
+          wget -q https://github.com/jgm/pandoc/releases/download/3.1.11.1/pandoc-3.1.11.1-1-amd64.deb
+          sudo apt-get install -y ./pandoc-3.1.11.1-1-amd64.deb
+          curl -fsSL https://github.com/typst/typst/releases/download/v0.13.1/typst-x86_64-unknown-linux-musl.tar.xz \
+            | sudo tar -xJ -C /usr/local/bin --strip-components=1 typst-x86_64-unknown-linux-musl/typst
+      - name: Bouw het boek
+        run: ./build.py
       - name: Controleer dat alle PDF's er zijn
-        run: test "$(ls pdf/*.pdf | wc -l)" -eq 32
-      - name: Maak een zip
-        run: cd pdf && zip ../cpu-design-cursus-pdf.zip *.pdf
+        run: test "$(ls pdf/*.pdf | wc -l)" -eq 3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: boek
+          path: pdf/*.pdf
       - name: Maak de release
+        if: startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "${{ github.ref_name }}" pdf/*.pdf cpu-design-cursus-pdf.zip \
+          gh release create "${{ github.ref_name }}" pdf/*.pdf \
             --title "${{ github.ref_name }}" \
-            --notes "PDF's van de cursus (syllabus, 30 weken en bijlagen), gebouwd uit de bronbestanden in deze tag."
+            --notes "Het boek, gebouwd uit de bronbestanden in deze tag. cpu-design-cursus.pdf is voor het scherm (alles in één bestand, klikbaar). Om af te drukken: cpu-design-cursus-print.pdf (recto-verso, met rugmarge) en cpu-design-cursus-codeboek-print.pdf (de lange listings, als tweede map)."

@@ -1,4 +1,3 @@
-# FILE: cpu_irq/fpga_flow.sh
 #!/bin/bash
 # Synthese, plaatsen en routeren, en een bitstream voor een iCE40-FPGA, met de open-source tools.
 # Gebruik:  bash fpga_flow.sh [hx8k|up5k] [top]        bijvoorbeeld:  bash fpga_flow.sh hx8k fpga_top

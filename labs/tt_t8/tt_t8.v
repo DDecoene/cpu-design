@@ -1,4 +1,3 @@
-// FILE: tt_t8/tt_t8.v
 // Het toplevel voor Tiny Tapeout: de T8 als kleine chip. De poortnamen volgen de afspraak van het project.
 //   ui_in  = de ingangspoort (IN)        uo_out  = de uitgangspoort (OUT)
 //   uio_out = debug: {halted, 0, programmateller}

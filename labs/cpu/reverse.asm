@@ -1,4 +1,3 @@
-; FILE: cpu/reverse.asm
 ; Keert de bits van R1 om (0xB4 -> 0x2D). Resultaat in R2.
         LDI  R1, 0xB4
         LDI  R2, 0

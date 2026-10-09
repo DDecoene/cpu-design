@@ -1,4 +1,3 @@
-; FILE: cpu/sort.asm
 ; Bubble sort van 8 bytes op adres 16..23 (zonder teken, oplopend).
         .data 16, 90, 3, 200, 17, 55, 1, 128, 77
         LDI  R1, 7          ; aantal doorlopen

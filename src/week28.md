@@ -14,19 +14,6 @@ title: "Week 28 · Het framebuffer: pixels in geheugen"
 - een pijplijn uitlijnen als een geheugen een klok vertraging toevoegt
 - de CPU pixels laten tekenen via een geheugengemapte poort met auto-increment
 
-<!-- COPY cpu_fpga/alu.v beeld/alu.v -->
-<!-- COPY cpu_fpga/idecode.v beeld/idecode.v -->
-<!-- COPY cpu_fpga/memories.v beeld/memories.v -->
-<!-- COPY cpu_fpga/memories_f.v beeld/memories_f.v -->
-<!-- COPY cpu_fpga/datapath_i.v beeld/datapath_i.v -->
-<!-- COPY cpu_fpga/control_f.v beeld/control_f.v -->
-<!-- COPY cpu_fpga/mmio_f.v beeld/mmio_f.v -->
-<!-- COPY cpu_fpga/asm.py beeld/asm.py -->
-<!-- COPYSED cpu_fpga/cpu_f.v beeld/cpu_v.v "// FILE: cpu_fpga/cpu_f.v"=>"// FILE: beeld/cpu_v.v" "module cpu_f #("=>"module cpu_v #(" "output [7:0]  gpio_out"=>"output [7:0]  gpio_out,
-  input         vblank,
-  output        fb_we,
-  output [13:0] fb_waddr,
-  output [7:0]  fb_wdata" "mmio_f #("=>"mmio_v #(" "txd, rxd, gpio_in, gpio_out, irq);"=>"txd, rxd, gpio_in, gpio_out, irq, vblank, fb_we, fb_waddr, fb_wdata);" -->
 
 ## 1. Hoeveel geheugen is een beeld?
 
@@ -95,27 +82,7 @@ Er zijn twee verstandige oplossingen:
 
 Een regel om te onthouden: **enkele bits via een synchronizer, hele woorden via een RAM met twee poorten**. Een synchronizer voor een woord van 8 bit werkt niet, want de bits kunnen op verschillende klokken aankomen en dan krijg je een mengsel van oud en nieuw.
 
-```verilog
-// FILE: beeld/fb_ram.v
-// Het framebuffer: 9600 bytes, twee pixels per byte, met twee klokken.
-// Schrijven gebeurt in het klokdomein van de CPU, lezen in dat van de pixelklok. Zo'n RAM met twee poorten
-// heeft een FPGA ingebouwd: een iCE40 koppelt er elk blok-RAM met een eigen schrijf- en leesklok aan.
-module fb_ram #(parameter DEPTH = 9600) (
-  input             wclk,
-  input             we,
-  input      [13:0] waddr,
-  input      [7:0]  wdata,
-  input             rclk,
-  input      [13:0] raddr,
-  output reg [7:0]  rdata
-);
-  reg [7:0] mem [0:DEPTH-1];
-  integer i;
-  initial for (i = 0; i < DEPTH; i = i + 1) mem[i] = 8'h00;   // bij het opstarten een zwart scherm
-
-  always @(posedge wclk) if (we) mem[waddr] <= wdata;
-  always @(posedge rclk) rdata <= mem[raddr];                  // de data komt een klok na het adres
-endmodule
+```{.verilog include="beeld/fb_ram.v"}
 ```
 
 De regel `always @(posedge rclk) rdata <= mem[raddr]` is belangrijk. Het geheugen heeft een geregistreerde uitgang: de data komt één klok na het adres. Dat is wat de synthesetool nodig heeft om er blok-RAM van te maken, en het kost ons een klok vertraging die we zo moeten opvangen.
@@ -126,66 +93,7 @@ Wat gebeurt er als de CPU en de monitor op hetzelfde moment hetzelfde adres rake
 
 De module `video_out` verbindt de generator uit week 27 met het framebuffer en de palette. Hij heeft een schrijfpoort voor de CPU-kant en de VGA-pinnen aan de andere kant.
 
-```verilog
-// FILE: beeld/video_out.v
-// Van framebuffer naar VGA-pinnen. Het scherm is 160 x 120 blokken van 4 x 4 pixels, elk blok met een van 16 kleuren.
-// Twee blokken per byte: het linker in de hoge, het rechter in de lage nibble. Een rij is dus 80 bytes.
-module video_out(
-  input        pclk,
-  input        rst_n,                // al gesynchroniseerd met pclk
-  input        wclk,                 // schrijfpoort van het framebuffer, in het klokdomein van de CPU
-  input        we,
-  input [13:0] waddr,
-  input [7:0]  wdata,
-  output reg   hsync, vsync,
-  output reg [3:0] r, g, b,
-  output       vblank                // in het pclk-domein; de CPU-kant synchroniseert dit zelf
-);
-  wire hs, vs, active;
-  wire [10:0] x, y;
-  vga_sync sync(.pclk(pclk), .rst_n(rst_n), .hsync(hs), .vsync(vs), .active(active), .vblank(vblank), .x(x), .y(y));
-
-  // Adres van het byte dat bij deze pixel hoort: rij * 80 + kolom / 2, met rij = y / 4 en kolom = x / 4.
-  wire [7:0]  bx = x[9:2];                                   // 0 tot 159
-  wire [6:0]  by = y[8:2];                                   // 0 tot 119 in het zichtbare gebied
-  wire [13:0] raddr = {by, 6'b000000} + {by, 4'b0000} + bx[7:1];   // by * 64 + by * 16 + bx / 2
-
-  wire [7:0] word;
-  fb_ram ram(.wclk(wclk), .we(we), .waddr(waddr), .wdata(wdata), .rclk(pclk), .raddr(raddr), .rdata(word));
-
-  // Het RAM antwoordt een klok te laat. Alles wat bij de pixel hoort wordt daarom ook een klok vertraagd.
-  reg act1, hs1, vs1, odd1;
-  always @(posedge pclk) begin act1 <= active; hs1 <= hs; vs1 <= vs; odd1 <= bx[0]; end
-
-  function [11:0] palette(input [3:0] i);                    // 16 kleuren in de stijl van EGA, 4 bit per kleurkanaal
-    case (i)
-      4'd0:  palette = 12'h000;   // zwart
-      4'd1:  palette = 12'h00A;   // blauw
-      4'd2:  palette = 12'h0A0;   // groen
-      4'd3:  palette = 12'h0AA;   // cyaan
-      4'd4:  palette = 12'hA00;   // rood
-      4'd5:  palette = 12'hA0A;   // magenta
-      4'd6:  palette = 12'hA50;   // bruin
-      4'd7:  palette = 12'hAAA;   // lichtgrijs
-      4'd8:  palette = 12'h555;   // donkergrijs
-      4'd9:  palette = 12'h55F;   // lichtblauw
-      4'd10: palette = 12'h5F5;   // lichtgroen
-      4'd11: palette = 12'h5FF;   // lichtcyaan
-      4'd12: palette = 12'hF55;   // lichtrood
-      4'd13: palette = 12'hF5F;   // lichtmagenta
-      4'd14: palette = 12'hFF5;   // geel
-      default: palette = 12'hFFF; // wit
-    endcase
-  endfunction
-
-  wire [3:0]  idx = odd1 ? word[3:0] : word[7:4];
-  wire [11:0] rgb = act1 ? palette(idx) : 12'h000;           // buiten het beeld moet de uitgang zwart zijn
-
-  always @(posedge pclk) begin                                // uitgangsregisters: schone pinnen
-    hsync <= hs1; vsync <= vs1;
-    {r, g, b} <= rgb;
-  end
-endmodule
+```{.verilog include="beeld/video_out.v"}
 ```
 
 Er zijn drie stappen en elk kost een klok:
@@ -213,53 +121,7 @@ De CPU ziet het beeld als vier geheugenplaatsen. Het datageheugen van W8F heeft 
 
 Het adres loopt van 0 tot 9 599 (`0x257F`). De module houdt zich eraan: een schrijfactie op een adres vanaf 9 600 wordt genegeerd, en het adres loopt niet verder op. Dat voorkomt dat een programma dat een paar bytes te ver schrijft het beeld aan de andere kant laat terugkomen. We hebben het nodig in week 30: 19 blokken van 512 bytes geven 9 728 bytes, iets meer dan de 9 600 die we nodig hebben.
 
-```verilog
-// FILE: beeld/video_io.v
-// De registers van het beeld, zoals de CPU ze ziet (adressen 0xF8 tot en met 0xFB):
-//   0xF8  FB_LO      laag byte van het byteadres in het framebuffer (lezen en schrijven)
-//   0xF9  FB_HI      hoog byte (6 bit; lezen en schrijven)
-//   0xFA  FB_DATA    schrijven: zet dit byte (twee pixels) op het adres en tel het adres 1 op
-//   0xFB  VID_STATUS lezen: bit 0 = de monitor is in de verticale blanking
-module video_io(
-  input         clk,
-  input         rst_n,
-  input         sel,                // het adres ligt in 0xF8 tot 0xFB
-  input         we,
-  input  [1:0]  reg_sel,            // de onderste twee adresbits
-  input  [7:0]  wdata,
-  output reg [7:0] rdata,
-  input         vblank_p,           // komt uit het pixelklokdomein
-  output        fb_we,
-  output [13:0] fb_waddr,
-  output [7:0]  fb_wdata
-);
-  localparam PIXBYTES = 14'd9600;   // 160 x 120 pixels, 2 per byte
-  reg [13:0] ptr;
-  reg vb1, vb2;                     // synchronizer: vblank_p is niet gelijk met onze klok (week 6)
-
-  assign fb_we    = we && sel && reg_sel == 2'd2 && ptr < PIXBYTES;   // schrijven voorbij het einde wordt genegeerd
-  assign fb_waddr = ptr;
-  assign fb_wdata = wdata;
-
-  always @(posedge clk or negedge rst_n)
-    if (!rst_n) begin ptr <= 14'd0; vb1 <= 1'b0; vb2 <= 1'b0; end
-    else begin
-      vb1 <= vblank_p; vb2 <= vb1;
-      if (we && sel) case (reg_sel)
-        2'd0: ptr[7:0]  <= wdata;
-        2'd1: ptr[13:8] <= wdata[5:0];
-        2'd2: if (ptr < PIXBYTES) ptr <= ptr + 14'd1;
-        default: ;
-      endcase
-    end
-
-  always @* case (reg_sel)
-    2'd0:    rdata = ptr[7:0];
-    2'd1:    rdata = {2'b00, ptr[13:8]};
-    2'd3:    rdata = {7'b0, vb2};
-    default: rdata = 8'h00;
-  endcase
-endmodule
+```{.verilog include="beeld/video_io.v"}
 ```
 
 Het register `vb1, vb2` is de synchronizer van `vblank`. Het signaal komt uit het klokdomein van het beeld en wordt door twee flipflops in het CPU-domein gehaald, zodat de CPU het veilig kan lezen.
@@ -268,42 +130,7 @@ Het register `vb1, vb2` is de synchronizer van `vblank`. Het signaal komt uit he
 
 We willen `mmio_f` (de geheugenkaart met UART, timer en GPIO uit week 22 en 24) niet veranderen. Zijn tests slagen, en het is goed om werkende code met rust te laten. In plaats daarvan leggen we er een laagje omheen. `mmio_v` bevat een `mmio_f` en een `video_io`, en kijkt naar de bovenste zes adresbits: zijn het `111110` (adressen `0xF8` tot en met `0xFB`), dan is het voor het beeld, anders voor `mmio_f`.
 
-```verilog
-// FILE: beeld/mmio_v.v
-// De geheugenkaart van W8F met de videoregisters erbij. We laten mmio_f ongemoeid en leggen er een laagje omheen:
-// adressen 0xF8 tot 0xFB gaan naar video_io, al het andere naar mmio_f.
-module mmio_v #(parameter DIV = 16, parameter TDIV = 1, parameter DATA = "data.hex", parameter DLOAD = 0) (
-  input        clk,
-  input        rst_n,
-  input        we,
-  input        rd,
-  input  [7:0] addr,
-  input  [7:0] wdata,
-  output [7:0] rdata,
-  output       txd,
-  input        rxd,
-  input  [7:0] gpio_in,
-  output [7:0] gpio_out,
-  output       irq,
-  input        vblank,
-  output       fb_we,
-  output [13:0] fb_waddr,
-  output [7:0]  fb_wdata
-);
-  wire [7:0] base_rdata, v_comb;
-  mmio_f #(DIV, TDIV, DATA, DLOAD) base(.clk(clk), .rst_n(rst_n), .we(we), .rd(rd), .addr(addr), .wdata(wdata), .rdata(base_rdata),
-                                        .txd(txd), .rxd(rxd), .gpio_in(gpio_in), .gpio_out(gpio_out), .irq(irq));
-
-  wire vsel = (addr[7:2] == 6'b111110);                       // 0xF8 tot 0xFB
-  video_io vio(.clk(clk), .rst_n(rst_n), .sel(vsel), .we(we), .reg_sel(addr[1:0]), .wdata(wdata), .rdata(v_comb),
-               .vblank_p(vblank), .fb_we(fb_we), .fb_waddr(fb_waddr), .fb_wdata(fb_wdata));
-
-  // Net als bij het RAM en de andere apparaten houden we de gelezen waarde een klokperiode vast (LD kost 3 cycli).
-  reg [7:0] v_q;
-  reg       vsel_q;
-  always @(posedge clk) begin v_q <= v_comb; vsel_q <= vsel; end
-  assign rdata = vsel_q ? v_q : base_rdata;
-endmodule
+```{.verilog include="beeld/mmio_v.v"}
 ```
 
 Eén ding vraagt aandacht. Bij W8F duurt een `LD` drie klokken: de CPU biedt het adres aan, het geheugen en de apparaten houden hun antwoord een klok vast, en in de derde klok neemt de CPU de waarde over. Ons nieuwe apparaat moet dezelfde afspraak volgen, en dat doet het door `v_q` en `vsel_q` te registreren zoals `mmio_f` dat met zijn eigen waarden doet. Sla je dat over, dan leest de CPU een klok te vroeg of te laat en zie je willekeurige waarden. Zo'n fout is moeilijk te vinden zonder golfvorm.
@@ -322,92 +149,17 @@ Zo blijft de bestaande CPU onaangeroerd en ziet de nieuwe versie er bijna hetzel
 
 De top verbindt de CPU met het beeld. Er zijn twee klokken, dus ook twee resets. Een reset is een asynchroon signaal (de knop) en moet in elk klokdomein synchroon eindigen, anders kan een deel van de flipflops net wel en een deel net niet uit reset komen. Dat is `reset_sync`: twee flipflops, hetzelfde als in week 23.
 
-```verilog
-// FILE: beeld/reset_sync.v
-// Een reset die asynchroon begint en synchroon eindigt: twee flipflops (week 6). Elk klokdomein krijgt er een.
-module reset_sync(
-  input  clk,
-  input  rst_n_in,
-  output rst_n_out
-);
-  reg [1:0] s = 2'b00;
-  always @(posedge clk or negedge rst_n_in)
-    if (!rst_n_in) s <= 2'b00;
-    else           s <= {s[0], 1'b1};
-  assign rst_n_out = s[1];
-endmodule
+```{.verilog include="beeld/reset_sync.v"}
 ```
 
-```verilog
-// FILE: beeld/beeld_v.v
-// CPU en beeld aan elkaar: de W8F met het framebuffer en de VGA-uitgang. Twee klokken: clk voor de CPU, pclk voor het beeld.
-module beeld_v #(
-  parameter PROG = "prog.hex", parameter DATA = "data.hex", parameter DLOAD = 0,
-  parameter DIV = 16, parameter TDIV = 1
-) (
-  input        clk,          // CPU-klok (op een iCEBreaker: de 12 MHz van het bord)
-  input        pclk,         // pixelklok (ongeveer 25 MHz, uit een PLL)
-  input        rst_n,
-  output       hsync, vsync,
-  output [3:0] r, g, b,
-  output       txd,
-  input        rxd,
-  input  [7:0] gpio_in,
-  output [7:0] gpio_out
-);
-  wire rst_cpu, rst_pix;
-  reset_sync rs_cpu(.clk(clk),  .rst_n_in(rst_n), .rst_n_out(rst_cpu));
-  reset_sync rs_pix(.clk(pclk), .rst_n_in(rst_n), .rst_n_out(rst_pix));
-
-  wire        vblank, fb_we;
-  wire [13:0] fb_waddr;
-  wire [7:0]  fb_wdata;
-
-  cpu_v #(PROG, 1, DIV, TDIV, DATA, DLOAD) cpu(
-    .clk(clk), .rst_n(rst_cpu), .halted(),
-    .pc_out(), .r0(), .r1(), .r2(), .r3(), .r4(), .r5(), .r6(), .r7(),
-    .flag_z(), .flag_n(), .flag_c(), .flag_v(),
-    .txd(txd), .rxd(rxd), .gpio_in(gpio_in), .gpio_out(gpio_out),
-    .vblank(vblank), .fb_we(fb_we), .fb_waddr(fb_waddr), .fb_wdata(fb_wdata)
-  );
-
-  video_out vid(
-    .pclk(pclk), .rst_n(rst_pix),
-    .wclk(clk), .we(fb_we), .waddr(fb_waddr), .wdata(fb_wdata),
-    .hsync(hsync), .vsync(vsync), .r(r), .g(g), .b(b), .vblank(vblank)
-  );
-endmodule
+```{.verilog include="beeld/beeld_v.v"}
 ```
 
 ## 9. Het eerste programma
 
 Het eerste programma vult het scherm met 16 verticale balken, een voor elke kleur in de palette. Het gebruikt een trucje dat je in elk programma voor deze computer terugziet: één register (`R3`) bevat het basisadres `0xF0` van de apparaten, en alle apparaten worden benaderd als `[R3 + offset]`. De offsets van de tabel staan dan rechtstreeks in de code (`+8` voor FB_LO, `+10` voor FB_DATA). Dat past in de 6 bit offset van `LD` en `ST` en bespaart een `LDI` bij elke toegang.
 
-```text
-; FILE: beeld/kleurbalken.asm
-; Vult het hele scherm met 16 verticale balken, een per palletkleur, en meldt dat het klaar is.
-; Een byte bevat twee pixels, dus het byte 0x00 is twee zwarte blokken, 0x11 twee blauwe, enzovoort tot 0xFF (wit).
-; Elke balk is 5 bytes = 10 blokken breed, 16 balken = 80 bytes = een volle rij.
-        LDI  R3, 0xF0           ; basisadres van de apparaten: alles hieronder is [R3 + offset]
-        LDI  R0, 0
-        ST   R0, [R3+8]         ; FB_LO = 0
-        ST   R0, [R3+9]         ; FB_HI = 0: begin linksboven
-        LDI  R6, 120            ; 120 rijen
-rij:    LDI  R1, 0x00           ; kleur in beide nibbles: 0x00, 0x11, ... 0xFF
-        LDI  R4, 16             ; 16 balken per rij
-balk:   LDI  R2, 5              ; 5 bytes per balk
-byte:   ST   R1, [R3+10]        ; FB_DATA: schrijf twee pixels, het adres loopt zelf op
-        ADDI R2, -1
-        BNE  byte
-        LDI  R0, 0x11
-        ADD  R1, R1, R0         ; volgende kleur
-        ADDI R4, -1
-        BNE  balk
-        ADDI R6, -1
-        BNE  rij
-        LDI  R0, 1
-        ST   R0, [R3+5]         ; GPIO bit 0 = klaar
-        HALT
+```{.text include="beeld/kleurbalken.asm"}
 ```
 
 Het byte `0x00` is twee zwarte blokken, `0x11` twee blauwe, tot `0xFF` (wit): de hoge en lage nibble zijn gelijk, dus beide pixels hebben dezelfde kleur. Elke balk is 5 bytes (10 blokken, 40 schermpixels) breed, en 16 balken zijn 80 bytes, dus precies een rij.
@@ -418,188 +170,17 @@ Er zijn drie testbenches, van klein naar groot.
 
 `tb_video_io` kijkt alleen naar de registers via de buslijnen, zoals de CPU dat doet: adres instellen, auto-increment, de grens bij 9 600 en de vblank-status.
 
-```verilog
-// FILE: beeld/tb_video_io.v
-// De videoregisters via de buslijnen van de CPU: adres instellen, auto-increment, grens bij 9600 en de vblank-status.
-module tb_video_io;
-  reg clk = 0, rst_n = 0, sel = 0, we = 0, vb = 0;
-  reg [1:0] reg_sel = 0;
-  reg [7:0] wdata = 0;
-  wire [7:0] rdata;
-  wire fb_we;
-  wire [13:0] fb_waddr;
-  wire [7:0] fb_wdata;
-  integer fouten = 0, n_writes = 0;
-
-  video_io dut(.clk(clk), .rst_n(rst_n), .sel(sel), .we(we), .reg_sel(reg_sel), .wdata(wdata), .rdata(rdata),
-               .vblank_p(vb), .fb_we(fb_we), .fb_waddr(fb_waddr), .fb_wdata(fb_wdata));
-  always #5 clk = ~clk;
-
-  always @(posedge clk) if (fb_we) n_writes = n_writes + 1;
-
-  task schrijf(input [1:0] r, input [7:0] d);
-    begin
-      @(negedge clk); sel = 1; we = 1; reg_sel = r; wdata = d;
-      @(negedge clk); sel = 0; we = 0;
-    end
-  endtask
-  task verwacht(input [13:0] adres, input [7:0] data);
-    begin
-      @(negedge clk); sel = 1; we = 1; reg_sel = 2; wdata = data;
-      #1;
-      if (!fb_we || fb_waddr !== adres || fb_wdata !== data) begin fouten = fouten + 1; $display("FAIL: schrijf op %0d: fb_we=%b adres=%0d data=%h", adres, fb_we, fb_waddr, fb_wdata); end
-      @(negedge clk); sel = 0; we = 0;
-    end
-  endtask
-  task lees(input [1:0] r, output [7:0] d);
-    begin @(negedge clk); sel = 1; reg_sel = r; #1 d = rdata; @(negedge clk); sel = 0; end
-  endtask
-
-  reg [7:0] v;
-  initial begin
-    #22 rst_n = 1;
-    schrijf(0, 8'h34); schrijf(1, 8'h12);                    // adres 0x1234 = 4660
-    lees(0, v); if (v !== 8'h34) begin fouten = fouten + 1; $display("FAIL: FB_LO leest %h", v); end
-    lees(1, v); if (v !== 8'h12) begin fouten = fouten + 1; $display("FAIL: FB_HI leest %h", v); end
-    verwacht(14'h1234, 8'hAB);
-    verwacht(14'h1235, 8'hCD);                                // het adres liep vanzelf op
-    lees(0, v); if (v !== 8'h36) begin fouten = fouten + 1; $display("FAIL: na twee schrijfacties staat FB_LO op %h", v); end
-    // naar het einde van het framebuffer
-    schrijf(0, 8'h7E); schrijf(1, 8'h25);                    // 0x257E = 9598
-    n_writes = 0;
-    verwacht(14'd9598, 8'h01);
-    verwacht(14'd9599, 8'h02);
-    @(negedge clk); sel = 1; we = 1; reg_sel = 2; wdata = 8'h03; #1;   // adres 9600: buiten het framebuffer
-    if (fb_we) begin fouten = fouten + 1; $display("FAIL: schrijven op adres 9600 mag niet"); end
-    @(negedge clk); sel = 0; we = 0;
-    lees(0, v);
-    if (v !== 8'h80) begin fouten = fouten + 1; $display("FAIL: het adres moet bij 9600 (0x2580) stoppen, FB_LO = %h", v); end
-    // status: de vblank-ingang komt twee klokken later aan
-    lees(3, v); if (v[0] !== 1'b0) begin fouten = fouten + 1; $display("FAIL: status zou 0 moeten zijn"); end
-    vb = 1; repeat (3) @(negedge clk);
-    lees(3, v); if (v[0] !== 1'b1) begin fouten = fouten + 1; $display("FAIL: status zou 1 moeten zijn"); end
-    // niet-geselecteerde schrijfacties doen niets
-    @(negedge clk); sel = 0; we = 1; reg_sel = 2; wdata = 8'hFF; #1;
-    if (fb_we) begin fouten = fouten + 1; $display("FAIL: zonder sel mag er niet geschreven worden"); end
-    @(negedge clk); we = 0;
-    if (fouten == 0) $display("PASS: video_io: adres, auto-increment, begrenzing en vblank-status kloppen");
-    $finish;
-  end
-endmodule
+```{.verilog include="beeld/tb_video_io.v"}
 ```
 
 `tb_video_out` zet een patroon rechtstreeks in het framebuffer (zonder CPU) en controleert elke pixel van het scherm via de virtuele monitor. De twee klokken zijn bewust ongelijk (12 MHz en 25,125 MHz): de testbench laat zien dat de brug tussen de twee klokken werkt. Het patroon is een functie van het byteadres, zodat een verkeerd adres of een omgewisselde nibble meteen opvalt.
 
-```verilog
-// FILE: beeld/tb_video_out.v
-`timescale 1ns/1ps
-// Schrijft een patroon rechtstreeks in het framebuffer (zonder CPU) en controleert elke pixel van het scherm.
-// De twee klokken zijn bewust niet gelijk en niet synchroon: 12 MHz voor het schrijven, 25,125 MHz voor het beeld.
-module tb_video_out;
-  reg wclk = 0, pclk = 0, rst_n = 0;
-  reg we = 0;
-  reg [13:0] waddr = 0;
-  reg [7:0] wdata = 0;
-  wire hsync, vsync, vblank, frame_done;
-  wire [3:0] r, g, b;
-  wire [31:0] frames;
-  integer fouten = 0, i, x, y, bx, idx;
-  reg [7:0] byte_i;
-  reg [11:0] pal [0:15];
-  reg [11:0] verwacht;
-
-  video_out dut(.pclk(pclk), .rst_n(rst_n), .wclk(wclk), .we(we), .waddr(waddr), .wdata(wdata),
-                .hsync(hsync), .vsync(vsync), .r(r), .g(g), .b(b), .vblank(vblank));
-  vga_mon mon(.pclk(pclk), .hsync(hsync), .vsync(vsync), .r(r), .g(g), .b(b), .frame_done(frame_done), .frames(frames));
-  always #41.667 wclk = ~wclk;
-  always #19.9 pclk = ~pclk;
-
-  // Het patroon: byte i krijgt een waarde die van i afhangt, zodat een verkeerd adres of een verwisselde nibble opvalt.
-  function [7:0] patroon(input integer n);
-    patroon = (n * 7 + n / 80 * 3 + 1) & 8'hFF;
-  endfunction
-
-  initial begin
-    // een eigen kopie van de palette, onafhankelijk van de code in video_out
-    pal[0]=12'h000; pal[1]=12'h00A; pal[2]=12'h0A0; pal[3]=12'h0AA; pal[4]=12'hA00; pal[5]=12'hA0A; pal[6]=12'hA50; pal[7]=12'hAAA;
-    pal[8]=12'h555; pal[9]=12'h55F; pal[10]=12'h5F5; pal[11]=12'h5FF; pal[12]=12'hF55; pal[13]=12'hF5F; pal[14]=12'hFF5; pal[15]=12'hFFF;
-    #200 rst_n = 1;
-    for (i = 0; i < 9600; i = i + 1) begin
-      @(posedge wclk); #1;
-      we = 1; waddr = i; wdata = patroon(i);
-    end
-    @(posedge wclk); #1 we = 0;
-    wait (frames == 2);                       // het tweede volledige beeld heeft het hele patroon
-    #1;
-    if (mon.painted_last !== 640 * 480) begin fouten = fouten + 1; $display("FAIL: %0d pixels geschilderd", mon.painted_last); end
-    if (mon.unknown_last !== 0) begin fouten = fouten + 1; $display("FAIL: %0d onbekende pixels", mon.unknown_last); end
-    for (y = 0; y < 480; y = y + 1)
-      for (x = 0; x < 640; x = x + 1) begin
-        bx = x / 4;
-        byte_i = patroon((y / 4) * 80 + bx / 2);
-        idx = (bx % 2 == 0) ? byte_i[7:4] : byte_i[3:0];     // linker blok = hoge nibble
-        verwacht = pal[idx];
-        if (mon.img[y*640 + x] !== verwacht && fouten < 10) begin
-          fouten = fouten + 1; $display("FAIL: pixel (%0d,%0d) is %h, verwacht %h", x, y, mon.img[y*640 + x], verwacht);
-        end
-      end
-    mon.write_ppm("../../build/video_out.ppm");
-    if (fouten == 0) $display("PASS: het framebuffer verschijnt pixel voor pixel goed op het scherm, met twee ongelijke klokken");
-    $finish;
-  end
-endmodule
+```{.verilog include="beeld/tb_video_out.v"}
 ```
 
 `tb_beeld_v` laat de CPU het programma uitvoeren en controleert wat er op het scherm komt:
 
-```verilog
-// FILE: beeld/tb_beeld_v.v
-`timescale 1ns/1ps
-// De hele keten: de CPU voert kleurbalken.asm uit, schrijft de balken in het framebuffer, en we kijken met de virtuele monitor wat er op het scherm staat.
-module tb_beeld_v;
-  reg clk = 0, pclk = 0, rst_n = 0;
-  wire hsync, vsync, txd, frame_done;
-  wire [3:0] r, g, b;
-  wire [7:0] gpio;
-  wire [31:0] frames;
-  integer fouten = 0, x, y;
-  reg [11:0] pal [0:15];
-
-  beeld_v #("kleurbalken.hex") dut(.clk(clk), .pclk(pclk), .rst_n(rst_n), .hsync(hsync), .vsync(vsync), .r(r), .g(g), .b(b),
-                                   .txd(txd), .rxd(1'b1), .gpio_in(8'h00), .gpio_out(gpio));
-  vga_mon mon(.pclk(pclk), .hsync(hsync), .vsync(vsync), .r(r), .g(g), .b(b), .frame_done(frame_done), .frames(frames));
-  always #41.667 clk = ~clk;
-  always #19.9 pclk = ~pclk;
-
-  initial begin
-    pal[0]=12'h000; pal[1]=12'h00A; pal[2]=12'h0A0; pal[3]=12'h0AA; pal[4]=12'hA00; pal[5]=12'hA0A; pal[6]=12'hA50; pal[7]=12'hAAA;
-    pal[8]=12'h555; pal[9]=12'h55F; pal[10]=12'h5F5; pal[11]=12'h5FF; pal[12]=12'hF55; pal[13]=12'hF5F; pal[14]=12'hFF5; pal[15]=12'hFFF;
-    #200 rst_n = 1;
-    wait (gpio[0] === 1'b1);                         // het programma meldt dat het klaar is
-    $display("de CPU is klaar op t = %0t", $time);
-    wait (frames >= 1);
-    frames_na_klaar();
-    // wacht op een volledig beeld dat helemaal na het tekenen begon
-    $finish;
-  end
-
-  task frames_na_klaar;
-    reg [31:0] f0;
-    begin
-      f0 = frames;
-      wait (frames == f0 + 2);                        // het eerste beeld erna kan nog half oud zijn; het tweede is zeker nieuw
-      #1;
-      if (mon.painted_last !== 640 * 480) begin fouten = fouten + 1; $display("FAIL: %0d pixels geschilderd", mon.painted_last); end
-      for (y = 0; y < 480; y = y + 1)
-        for (x = 0; x < 640; x = x + 1)
-          if (mon.img[y*640 + x] !== pal[x / 40] && fouten < 10) begin
-            fouten = fouten + 1; $display("FAIL: pixel (%0d,%0d) is %h, verwacht %h", x, y, mon.img[y*640 + x], pal[x / 40]);
-          end
-      mon.write_ppm("../../build/kleurbalken.ppm");
-      if (fouten == 0) $display("PASS: de CPU tekent 16 kleurbalken en het scherm toont ze op de goede plek");
-    end
-  endtask
-endmodule
+```{.verilog include="beeld/tb_beeld_v.v"}
 ```
 
 ### Streng genoeg?
@@ -617,7 +198,7 @@ De kleurbalken zijn in 6,5 ms klaar op een CPU-klok van 12 MHz. Dat is 77 760 kl
 
 ## 11. Lab
 
-1. Draai de tests van fase 7 (`python3 extract_labs.py beeld`) en zoek de PASS-regels van `tb_video_io`, `tb_video_out` en `tb_beeld_v`.
+1. Draai de tests van fase 7 (`python3 test_labs.py beeld`) en zoek de PASS-regels van `tb_video_io`, `tb_video_out` en `tb_beeld_v`.
 2. Zet `build/kleurbalken.ppm` om naar PNG (`ppm2png.py`, week 27) en bekijk hem. Zie je 16 balken?
 3. Verander in `kleurbalken.asm` het aantal bytes per balk van 5 in 4. Het scherm wordt niet meer volledig gevuld. Wat ziet de test en wat zie je in de afbeelding?
 4. Schrijf een programma dat het scherm vult met een dambord van 8 x 8 blokken, afwisselend zwart en wit. Pas `tb_beeld_v` aan zodat hij het dambord controleert.

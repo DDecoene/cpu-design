@@ -1,4 +1,3 @@
-# FILE: memhier/predict.py
 """Sprongvoorspellers vergelijken op sporen van echte W8-programma's."""
 from asm import assemble
 from w8iss import run

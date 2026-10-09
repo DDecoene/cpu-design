@@ -1,4 +1,3 @@
-// FILE: tta_hw/pair_hw.v
 `timescale 1ns/1ps
 `ifndef HALF
   `define HALF 500                 // halve klokperiode in ns: 500 = 1 MHz

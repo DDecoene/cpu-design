@@ -1,4 +1,3 @@
-// FILE: tta_hw/t8_board.v
 `timescale 1ns/1ps
 // De transport-triggered architecture T8 uit echte 74HC-chips. Dit bestand is het schema in tekstvorm:
 // elke 'u_...' is één chip op de printplaat, elke 'wire' een draad.

@@ -193,107 +193,17 @@ Een kort programma:
 
 Tot de echte Python-assembler van week 17 gebruiken we iets eenvoudigers: Verilog-functies die een instructiewoord uit zijn velden bouwen. Zo kunnen testbenches programma's laden zonder dat je hex hoeft te typen. Maak `labs/cpu/` aan en sla deze bestanden op.
 
-```verilog
-// FILE: cpu/asm_funcs.vh
-// Mini-assembler in Verilog-functies: bouw een instructiewoord uit zijn velden.
-function [15:0] I_ALU(input [2:0] fn, input [2:0] rd, input [2:0] rs1, input [2:0] rs2);
-  I_ALU = {4'h0, rd, rs1, rs2, fn};
-endfunction
-function [15:0] I_LDI(input [2:0] rd, input [7:0] imm);   I_LDI  = {4'h1, rd, 1'b0, imm}; endfunction
-function [15:0] I_ADDI(input [2:0] rd, input [7:0] imm);  I_ADDI = {4'h2, rd, 1'b0, imm}; endfunction
-function [15:0] I_LD(input [2:0] rd, input [2:0] rs, input [5:0] off);  I_LD = {4'h3, rd, rs, off}; endfunction
-function [15:0] I_ST(input [2:0] rd, input [2:0] rs, input [5:0] off);  I_ST = {4'h4, rd, rs, off}; endfunction
-function [15:0] I_BCC(input [2:0] cond, input [7:0] addr); I_BCC = {4'h5, cond, 1'b0, addr}; endfunction
-function [15:0] I_CMP(input [2:0] rs1, input [2:0] rs2);  I_CMP = {4'h6, 3'b000, rs1, rs2, 3'b000}; endfunction
-function [15:0] I_CMPI(input [2:0] rd, input [7:0] imm);  I_CMPI = {4'h7, rd, 1'b0, imm}; endfunction
-function [15:0] I_CALL(input [7:0] addr);                 I_CALL = {4'h8, 4'b0000, addr}; endfunction
-function [15:0] I_JR(input [2:0] rs);                     I_JR = {4'h9, 3'b000, rs, 6'b000000}; endfunction
-localparam [15:0] I_NOP = 16'hA000, I_HALT = 16'hF000;
-localparam [2:0] F_ADD = 0, F_SUB = 1, F_AND = 2, F_OR = 3, F_XOR = 4, F_NOT = 5, F_SHL = 6, F_SHR = 7;
-localparam [2:0] C_AL = 0, C_EQ = 1, C_NE = 2, C_CS = 3, C_CC = 4, C_LT = 5, C_GE = 6, C_MI = 7;
+```{.verilog include="cpu/asm_funcs.vh"}
 ```
 
 De decoder haalt de velden uit een instructiewoord. In hardware zijn dat alleen draden: een deel van een bus. Een decoder kost dus geen poorten en geen tijd.
 
-```verilog
-// FILE: cpu/idecode.v
-// Haalt de velden uit een 16-bit instructie.
-module idecode(
-  input  [15:0] ir,
-  output [3:0]  op,
-  output [2:0]  rd,
-  output [2:0]  rs1,
-  output [2:0]  rs2,
-  output [2:0]  fn,
-  output [2:0]  cond,
-  output [7:0]  imm8,
-  output [5:0]  off6
-);
-  assign op   = ir[15:12];
-  assign rd   = ir[11:9];
-  assign rs1  = ir[8:6];
-  assign rs2  = ir[5:3];
-  assign fn   = ir[2:0];
-  assign cond = ir[11:9];
-  assign imm8 = ir[7:0];
-  assign off6 = ir[5:0];
-endmodule
+```{.verilog include="cpu/idecode.v"}
 ```
 
 De test controleert twee dingen. Komen de met de hand berekende hex-waarden uit de tabel overeen met wat de functies maken? En vindt de decoder bij 5000 willekeurige woorden elk veld op de juiste plek?
 
-```verilog
-// FILE: cpu/tb_isa.v
-`include "asm_funcs.vh"
-module tb_isa;
-  reg  [15:0] ir;
-  wire [3:0]  op;
-  wire [2:0]  rd, rs1, rs2, fn, cond;
-  wire [7:0]  imm8;
-  wire [5:0]  off6;
-  integer i, fouten = 0;
-
-  idecode dec(ir, op, rd, rs1, rs2, fn, cond, imm8, off6);
-
-  task check_word(input [15:0] gemaakt, input [15:0] met_de_hand, input [255:0] naam);
-    if (gemaakt !== met_de_hand) begin
-      fouten = fouten + 1;
-      $display("FAIL %0s: functie geeft %h, handwerk %h", naam, gemaakt, met_de_hand);
-    end
-  endtask
-
-  initial begin
-    // Met de hand gecodeerde instructies (zie de tabel in de cursus).
-    check_word(I_LDI(1, 5),            16'h1205, "LDI R1,5");
-    check_word(I_LDI(2, 7),            16'h1407, "LDI R2,7");
-    check_word(I_ALU(F_ADD, 3, 1, 2),  16'h0650, "ADD R3,R1,R2");
-    check_word(I_ST(3, 0, 9),          16'h4609, "ST R3,[R0+9]");
-    check_word(I_LD(4, 0, 9),          16'h3809, "LD R4,[R0+9]");
-    check_word(I_CMP(3, 4),            16'h60E0, "CMP R3,R4");
-    check_word(I_BCC(C_EQ, 0),         16'h5200, "BEQ 0");
-    check_word(I_HALT,                 16'hF000, "HALT");
-    check_word(I_NOP,                  16'hA000, "NOP");
-    check_word(I_CALL(8'h2A),          16'h802A, "CALL 0x2A");
-    check_word(I_JR(7),                16'h91C0, "JR R7");
-    check_word(I_ADDI(5, 8'hFF),       16'h2AFF, "ADDI R5,-1");
-    check_word(I_CMPI(2, 10),          16'h740A, "CMPI R2,10");
-
-    // De decoder moet bij willekeurige woorden elk veld op de juiste plek vinden.
-    for (i = 0; i < 5000; i = i + 1) begin
-      ir = $random; #1;
-      if (op   !== ((ir >> 12) & 4'hF))  begin fouten = fouten + 1; $display("FAIL op"); end
-      if (rd   !== ((ir >> 9)  & 3'h7))  begin fouten = fouten + 1; $display("FAIL rd"); end
-      if (rs1  !== ((ir >> 6)  & 3'h7))  begin fouten = fouten + 1; $display("FAIL rs1"); end
-      if (rs2  !== ((ir >> 3)  & 3'h7))  begin fouten = fouten + 1; $display("FAIL rs2"); end
-      if (fn   !== (ir & 3'h7))          begin fouten = fouten + 1; $display("FAIL fn"); end
-      if (cond !== ((ir >> 9)  & 3'h7))  begin fouten = fouten + 1; $display("FAIL cond"); end
-      if (imm8 !== (ir & 8'hFF))         begin fouten = fouten + 1; $display("FAIL imm8"); end
-      if (off6 !== (ir & 6'h3F))         begin fouten = fouten + 1; $display("FAIL off6"); end
-    end
-    if (fouten == 0) $display("PASS: instructiecodering en decoder kloppen");
-    $finish;
-  end
-endmodule
+```{.verilog include="cpu/tb_isa.v"}
 ```
 
 Draai:

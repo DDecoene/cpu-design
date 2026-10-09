@@ -97,40 +97,10 @@ Een NAND heeft vier transistoren, een AND heeft er zes (een NAND plus een invert
 
 Verilog heeft ingebouwde primitieven `nmos` en `pmos`. We bouwen hiermee de NAND van hierboven na en testen alle vier de invoerparen:
 
-```verilog
-// FILE: week02/nand_cmos.v
-// NAND-poort uit 4 transistoren (2 PMOS parallel, 2 NMOS in serie).
-module nand_cmos(input a, input b, output y);
-  supply1 vdd;        // de plusspanning
-  supply0 gnd;        // massa
-  wire mid;           // knooppunt tussen de twee NMOS
-  pmos p1(y, vdd, a);
-  pmos p2(y, vdd, b);
-  nmos n1(y, mid, a);
-  nmos n2(mid, gnd, b);
-endmodule
+```{.verilog include="week02/nand_cmos.v"}
 ```
 
-```verilog
-// FILE: week02/tb_nand_cmos.v
-module tb_nand_cmos;
-  reg a, b;
-  wire y;
-  integer i, fouten = 0;
-  nand_cmos dut(.a(a), .b(b), .y(y));
-
-  initial begin
-    for (i = 0; i < 4; i = i + 1) begin
-      {a, b} = i[1:0];
-      #1;
-      if (y !== ~(a & b)) begin
-        fouten = fouten + 1;
-        $display("FAIL: a=%b b=%b gaf y=%b", a, b, y);
-      end
-    end
-    if (fouten == 0) $display("PASS: transistor-NAND klopt voor alle 4 de invoeren");
-  end
-endmodule
+```{.verilog include="week02/tb_nand_cmos.v"}
 ```
 
 ## 4. De standaardpoorten
@@ -167,65 +137,13 @@ Met alleen NAND-poorten kun je elke logische functie bouwen. Dat laat je zien do
 
 Dit is niet alleen een denkoefening. De Apollo Guidance Computer (1966), die de maanlanding begeleidde, bestond bijna volledig uit NOR-poorten met drie ingangen. Wat je nu leert, is dus echt de basis.
 
-```verilog
-// FILE: week02/nand2.v
-module nand2(input a, input b, output y);
-  assign y = ~(a & b);
-endmodule
+```{.verilog include="week02/nand2.v"}
 ```
 
-```verilog
-// FILE: week02/gates_from_nand.v
-// Alle andere poorten, uitsluitend gebouwd uit nand2.
-module not_n(input a, output y);
-  nand2 g(a, a, y);
-endmodule
-
-module and_n(input a, input b, output y);
-  wire t;
-  nand2 g1(a, b, t);
-  not_n g2(t, y);
-endmodule
-
-module or_n(input a, input b, output y);
-  wire na, nb;
-  not_n g1(a, na);
-  not_n g2(b, nb);
-  nand2 g3(na, nb, y);
-endmodule
-
-module xor_n(input a, input b, output y);
-  wire t, u, v;
-  nand2 g1(a, b, t);
-  nand2 g2(a, t, u);
-  nand2 g3(b, t, v);
-  nand2 g4(u, v, y);
-endmodule
+```{.verilog include="week02/gates_from_nand.v"}
 ```
 
-```verilog
-// FILE: week02/tb_universal.v
-module tb_universal;
-  reg a, b;
-  wire y_not, y_and, y_or, y_xor;
-  integer i, fouten = 0;
-  not_n d1(a, y_not);
-  and_n d2(a, b, y_and);
-  or_n  d3(a, b, y_or);
-  xor_n d4(a, b, y_xor);
-
-  initial begin
-    for (i = 0; i < 4; i = i + 1) begin
-      {a, b} = i[1:0];
-      #1;
-      if (y_not !== ~a)     begin fouten = fouten + 1; $display("FAIL not %b", a); end
-      if (y_and !== (a & b)) begin fouten = fouten + 1; $display("FAIL and %b%b", a, b); end
-      if (y_or  !== (a | b)) begin fouten = fouten + 1; $display("FAIL or %b%b", a, b); end
-      if (y_xor !== (a ^ b)) begin fouten = fouten + 1; $display("FAIL xor %b%b", a, b); end
-    end
-    if (fouten == 0) $display("PASS: NOT, AND, OR en XOR zijn allemaal uit NAND gebouwd");
-  end
-endmodule
+```{.verilog include="week02/tb_universal.v"}
 ```
 
 ## 6. Echte chips: de 74HC-serie
@@ -316,36 +234,10 @@ Je moet twee keer PASS zien. Breek het ontwerp daarna met opzet: wissel in `nand
 6. Wil de ene uitgang hoog zijn (naar Vdd) en de andere laag (naar GND), dan ontstaat kortsluiting. Dat kan de chip beschadigen, en de spanning is bovendien niet gedefinieerd.
 7. Majority(A,B,C) = AB + BC + AC. Neem drie NAND's: t1 = NAND(a,b), t2 = NAND(b,c), t3 = NAND(a,c). Dan is Majority = NOT(t1 · t2 · t3) = NAND(AND(t1,t2), t3). Alles uit `nand2`:
 
-```verilog
-// FILE: week02/majority.v
-module majority(input a, input b, input c, output y);
-  wire t1, t2, t3, t12;
-  nand2 g1(a, b, t1);
-  nand2 g2(b, c, t2);
-  nand2 g3(a, c, t3);
-  and_n g4(t1, t2, t12);
-  nand2 g5(t12, t3, y);
-endmodule
+```{.verilog include="week02/majority.v"}
 ```
 
-```verilog
-// FILE: week02/tb_majority.v
-module tb_majority;
-  reg a, b, c;
-  wire y;
-  integer i, fouten = 0;
-  majority dut(a, b, c, y);
-  initial begin
-    for (i = 0; i < 8; i = i + 1) begin
-      {a, b, c} = i[2:0];
-      #1;
-      if (y !== ((a & b) | (b & c) | (a & c))) begin
-        fouten = fouten + 1; $display("FAIL: %b%b%b gaf %b", a, b, c, y);
-      end
-    end
-    if (fouten == 0) $display("PASS: majority klopt voor alle 8 combinaties");
-  end
-endmodule
+```{.verilog include="week02/tb_majority.v"}
 ```
 
 ## 11. Zelftest

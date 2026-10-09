@@ -1,4 +1,3 @@
-// FILE: beeld/cpu_v.v
 // W8F: de FPGA-vriendelijke W8I. Datageheugen in blok-RAM, LD kost 3 cycli.
 module cpu_v #(
   parameter PROG = "prog.hex", parameter LOAD = 1, parameter DIV = 16, parameter TDIV = 1,

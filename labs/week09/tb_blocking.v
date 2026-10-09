@@ -1,4 +1,3 @@
-// FILE: week09/tb_blocking.v
 module tb_blocking;
   reg clk = 0, d = 0;
   wire a1, a2, a3, b1, b2, b3;

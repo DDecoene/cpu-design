@@ -1,4 +1,3 @@
-// FILE: week12/shifter.v
 // Barrel shifter. mode: 00 LSL, 01 LSR, 10 ASR, 11 ROR.
 module shifter #(parameter W = 8, parameter SW = 3) (
   input  [W-1:0]  a,

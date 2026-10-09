@@ -1,4 +1,3 @@
-// FILE: tta/tb_tta_answers.v
 module tb_tta_answers;
   reg clk = 0, rst_n = 0;
   wire [7:0] out_port;

@@ -1,4 +1,3 @@
-// FILE: beeld/vga_bars.v
 // Testbeeld: een witte rand, acht kleurbalken en een grijsverloop.
 // De rand laat zien of de hoeken van het beeld goed liggen, de balken of de kleurkanalen kloppen.
 module vga_bars(

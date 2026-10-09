@@ -1,4 +1,3 @@
-; FILE: beeld/boot.asm
 ; Het bootprogramma van de beeldcomputer: start de SD-kaart op, lees 19 blokken van 512 bytes en zet ze in het framebuffer.
 ; De LED's (GPIO) laten zien waar het programma is: 1 = klokpulsen, 2 = CMD0 gelukt, 3 = CMD8 gelukt (de kaart start op),
 ; 4 = kaart klaar, 5 = bezig met lezen, 0x10 = klaar. Bit 7 erbij betekent: fout in die stap.

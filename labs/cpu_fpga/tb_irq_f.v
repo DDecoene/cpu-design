@@ -1,4 +1,3 @@
-// FILE: cpu_irq/tb_irq.v
 // Test van interrupts en apparaten: timer, UART met polling, UART met interrupt.
 module tb_irq_f;
   localparam DIV = 16;

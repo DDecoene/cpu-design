@@ -1,4 +1,3 @@
-// FILE: beeld/mmio_v.v
 // De geheugenkaart van W8F met de videoregisters erbij. We laten mmio_f ongemoeid en leggen er een laagje omheen:
 // adressen 0xF8 tot 0xFB gaan naar video_io, al het andere naar mmio_f.
 module mmio_v #(parameter DIV = 16, parameter TDIV = 1, parameter DATA = "data.hex", parameter DLOAD = 0) (

@@ -1,4 +1,3 @@
-; FILE: cpu_irq/hello.asm
 ; Zegt "W8 OK" via de UART en laat daarna een LED knipperen met de timer.
 ; Op de FPGA is een timertik 1 ms, dus 250 betekent: de LED wisselt elke 250 ms.
         .data 16, 0x57, 0x38, 0x20, 0x4F, 0x4B, 0x0D, 0x0A, 0   ; "W8 OK" + nieuwe regel + einde

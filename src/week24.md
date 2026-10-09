@@ -95,53 +95,10 @@ We willen het datageheugen in blok-RAM, met synchrone uitlezing. De apparaatregi
 
 De CPU heet W8F (F voor FPGA). Alles blijft hetzelfde, behalve drie bestanden. Kopieer eerst de rest (let op: het gaat om bestanden uit week 14 tot en met 23).
 
-<!-- COPY cpu/memories.v cpu_fpga/memories.v -->
-<!-- COPY cpu_irq/alu.v cpu_fpga/alu.v -->
-<!-- COPY cpu_irq/idecode.v cpu_fpga/idecode.v -->
-<!-- COPY cpu_irq/datapath_i.v cpu_fpga/datapath_i.v -->
-<!-- COPY cpu_irq/control_i.v cpu_fpga/control_i.v -->
-<!-- COPY cpu_irq/mmio.v cpu_fpga/mmio.v -->
-<!-- COPY cpu_irq/cpu_i.v cpu_fpga/cpu_i.v -->
-<!-- COPY cpu_irq/fpga_top.v cpu_fpga/fpga_top.v -->
-<!-- COPY cpu_irq/asm.py cpu_fpga/asm.py -->
-<!-- COPY cpu_irq/hello.asm cpu_fpga/hello.asm -->
-<!-- COPY cpu_irq/timer.asm cpu_fpga/timer.asm -->
-<!-- COPY cpu_irq/timer_uit.asm cpu_fpga/timer_uit.asm -->
-<!-- COPY cpu_irq/uart.asm cpu_fpga/uart.asm -->
-<!-- COPY cpu_irq/uart_irq.asm cpu_fpga/uart_irq.asm -->
-<!-- COPY cpu_irq/blink.asm cpu_fpga/blink.asm -->
-<!-- COPY cpu_irq/fpga_flow.sh cpu_fpga/fpga_flow.sh -->
-<!-- COPY cpu/sum.asm cpu_fpga/sum.asm -->
-<!-- COPY cpu/mul.asm cpu_fpga/mul.asm -->
-<!-- COPY cpu/sort.asm cpu_fpga/sort.asm -->
-<!-- COPY cpu/primes.asm cpu_fpga/primes.asm -->
-<!-- COPY cpu/gcd.asm cpu_fpga/gcd.asm -->
-<!-- COPY cpu/calls.asm cpu_fpga/calls.asm -->
 
 ### Het datageheugen met synchrone uitlezing
 
-```verilog
-// FILE: cpu_fpga/memories_f.v
-// Datageheugen met synchrone uitlezing: de data verschijnt een klokperiode na het adres.
-// Zo kan een synthesetool het in een blok-RAM van de FPGA onderbrengen.
-module dmem_s #(parameter FILE = "data.hex", parameter LOAD = 0) (
-  input            clk,
-  input            we,
-  input      [7:0] addr,
-  input      [7:0] din,
-  output reg [7:0] dout
-);
-  reg [7:0] mem [0:255];
-  integer i;
-  initial begin
-    if (LOAD) $readmemh(FILE, mem);
-    else for (i = 0; i < 256; i = i + 1) mem[i] = 8'h00;
-  end
-  always @(posedge clk) begin
-    if (we) mem[addr] <= din;
-    dout <= mem[addr];
-  end
-endmodule
+```{.verilog include="cpu_fpga/memories_f.v"}
 ```
 
 Dit is het hele geheim: de uitlezing zit binnen het klokgestuurde blok. Yosys herkent het patroon en gebruikt een `SB_RAM40_4K`, een ingebouwd geheugenblok.
@@ -156,363 +113,22 @@ Voor de rest is dit `control_i.v` van week 22. Het verschil is dat de toestand `
 | 1 | het adres wordt aan het geheugen aangeboden en aan het eind van deze stap legt het geheugen de data vast |
 | 2 | het gelezen woord gaat naar het register |
 
-```verilog
-// FILE: cpu_fpga/control_f.v
-// Besturing voor de FPGA-vriendelijke W8F. Zelfde controlegeheugen als control_i, maar het datageheugen
-// geeft zijn gegevens pas een klokperiode na het adres (blok-RAM). Daarom heeft LD een derde stap.
-module control_f(
-  input        clk,
-  input        rst_n,
-  input  [3:0] op,
-  input  [2:0] cond,
-  input        flag_z, flag_n, flag_c, flag_v,
-  input        irq,         // een apparaat vraagt om aandacht
-  input        ie,          // interrupts zijn toegestaan
-  output       pc_inc, pc_load, pc_src, ir_we, reg_we, wa_r7,
-  output       ra_sel, rb_sel, alu_ir, flags_we, mem_we,
-  output [1:0] wb_sel, b_sel,
-  output [2:0] alu_op,
-  output       mem_rd,      // leesactie (voor apparaten waarvan lezen iets doet)
-  output       int_enter, reti, ei, di,
-  output       halted
-);
-  // Opcodes
-  localparam OP_ALU = 4'h0, OP_LDI = 4'h1, OP_ADDI = 4'h2, OP_LD = 4'h3, OP_ST = 4'h4,
-             OP_BCC = 4'h5, OP_CMP = 4'h6, OP_CMPI = 4'h7, OP_CALL = 4'h8, OP_JR = 4'h9,
-             OP_RETI = 4'hB, OP_EI = 4'hC, OP_DI = 4'hD, OP_HALT = 4'hF;
-
-  // Bitposities in het controlewoord
-  localparam [23:0]
-    F_PC_INC   = 24'h000001,
-    F_PC_LOAD  = 24'h000002,
-    F_PC_REG   = 24'h000004,
-    F_IR_WE    = 24'h000008,
-    F_REG_WE   = 24'h000010,
-    F_WA_R7    = 24'h000020,
-    F_RA_RD    = 24'h000040,
-    F_RB_RD    = 24'h000080,
-    F_ALU_IR   = 24'h000100,
-    F_FLAGS    = 24'h000200,
-    F_MEM_WE   = 24'h000400,
-    F_COND     = 24'h000800,          // laad de PC alleen als de voorwaarde klopt
-    F_WB_MEM   = 24'h001000,          // wb_sel = 1
-    F_WB_IMM   = 24'h002000,          // wb_sel = 2
-    F_WB_PC    = 24'h003000,          // wb_sel = 3
-    F_B_IMM    = 24'h004000,          // b_sel = 1
-    F_B_OFF    = 24'h008000,          // b_sel = 2
-    F_ALU_SUB  = 24'h010000,          // alu_op = 1
-    F_HALT     = 24'h080000,
-    F_RETI     = 24'h100000,
-    F_EI       = 24'h200000,
-    F_DI       = 24'h400000,
-    F_INT      = 24'h800000;
-
-  reg [1:0] st;                      // 0 = ophalen, 1 = uitvoeren, 2 = LD afronden
-  wire t = (st != 2'd0);
-  reg halt_r;
-  reg [23:0] cw;
-
-  // Het controlegeheugen zelf: opcode en stap in, controlewoord uit.
-  always_comb begin
-    cw = 24'h0;
-    if (!halt_r) begin
-      if (st == 2'd0) cw = (irq && ie) ? F_INT : (F_PC_INC | F_IR_WE);   // ophalen, of een interrupt nemen
-      else if (st == 2'd2) cw = F_B_OFF | F_REG_WE | F_WB_MEM;            // LD, stap 3: het gelezen woord naar het register
-      else case (op)
-        OP_ALU:  cw = F_ALU_IR | F_REG_WE | F_FLAGS;             // rd = rs1 <fn> rs2
-        OP_LDI:  cw = F_REG_WE | F_WB_IMM;                       // rd = imm8
-        OP_ADDI: cw = F_RA_RD | F_B_IMM | F_REG_WE | F_FLAGS;    // rd = rd + imm8
-        OP_LD:   cw = F_B_OFF;                                   // rd = mem[rs1 + off6]: adres aanbieden, lezen volgt in stap 3
-        OP_ST:   cw = F_B_OFF | F_RB_RD | F_MEM_WE;              // mem[rs1 + off6] = rd
-        OP_BCC:  cw = F_PC_LOAD | F_COND;                        // if cond: PC = imm8
-        OP_CMP:  cw = F_ALU_SUB | F_FLAGS;                       // vlaggen van rs1 - rs2
-        OP_CMPI: cw = F_RA_RD | F_B_IMM | F_ALU_SUB | F_FLAGS;   // vlaggen van rd - imm8
-        OP_CALL: cw = F_PC_LOAD | F_REG_WE | F_WA_R7 | F_WB_PC;  // R7 = PC; PC = imm8
-        OP_JR:   cw = F_PC_LOAD | F_PC_REG;                      // PC = rs1
-        OP_RETI: cw = F_RETI;                                    // PC = EPC, interrupts weer aan
-        OP_EI:   cw = F_EI;
-        OP_DI:   cw = F_DI;
-        OP_HALT: cw = F_HALT;
-        default: cw = 24'h0;                                     // NOP en ongebruikte opcodes
-      endcase
-    end
-  end
-
-  // Voorwaarde-evaluatie
-  reg cond_ok;
-  always_comb begin
-    case (cond)
-      3'd0: cond_ok = 1'b1;              // AL  altijd
-      3'd1: cond_ok = flag_z;                // EQ
-      3'd2: cond_ok = ~flag_z;               // NE
-      3'd3: cond_ok = flag_c;                // CS  (A >= B zonder teken na CMP)
-      3'd4: cond_ok = ~flag_c;               // CC  (A <  B zonder teken)
-      3'd5: cond_ok = flag_n ^ flag_v;           // LT  (met teken)
-      3'd6: cond_ok = ~(flag_n ^ flag_v);        // GE  (met teken)
-      default: cond_ok = flag_n;             // MI  negatief
-    endcase
-  end
-
-  // Stap en halt-vlag
-  always @(posedge clk or negedge rst_n)
-    if (!rst_n) begin st <= 2'd0; halt_r <= 1'b0; end
-    else if (!halt_r) begin
-      case (st)
-        2'd0:    st <= 2'd1;
-        2'd1:    st <= (op == OP_LD) ? 2'd2 : 2'd0;
-        default: st <= 2'd0;
-      endcase
-      if (cw[19]) halt_r <= 1'b1;
-    end
-
-  assign pc_inc   = cw[0];
-  assign pc_load  = cw[1] & (~cw[11] | cond_ok);
-  assign pc_src   = cw[2];
-  assign ir_we    = cw[3];
-  assign reg_we   = cw[4];
-  assign wa_r7    = cw[5];
-  assign ra_sel   = cw[6];
-  assign rb_sel   = cw[7];
-  assign alu_ir   = cw[8];
-  assign flags_we = cw[9];
-  assign mem_we   = cw[10];
-  assign wb_sel   = cw[13:12];
-  assign b_sel    = cw[15:14];
-  assign alu_op   = cw[18:16];
-  assign int_enter = cw[23];
-  assign reti      = cw[20];
-  assign ei        = cw[21];
-  assign di        = cw[22];
-  assign mem_rd    = (st == 2'd1) && !halt_r && (op == OP_LD);
-  assign halted    = halt_r;
-endmodule
+```{.verilog include="cpu_fpga/control_f.v"}
 ```
 
 ### De apparaten: ook een klokperiode vertraging
 
 Het RAM geeft zijn data een periode later, dus moeten de apparaatregisters dat ook doen. Anders weet de CPU niet wanneer een lezing geldig is. De multiplexer die kiest tussen RAM en apparaat gebruikt het adres uit de vorige periode.
 
-```verilog
-// FILE: cpu_fpga/mmio_f.v
-// Het datageheugen met apparaten (memory-mapped I/O).
-//   0x00..0xEF  RAM
-//   0xF0  UART data      schrijven: verzenden; lezen: ontvangen byte (wist 'ontvangen')
-//   0xF1  UART status    bit 0 = zender bezig, bit 1 = byte ontvangen
-//   0xF2  Timer herlaadwaarde   (0 = timer uit)
-//   0xF3  Timer status   lezen: bit 0 = aanvraag; schrijven (willekeurige waarde): aanvraag wissen
-//   0xF5  GPIO uit (bijvoorbeeld LED's)     0xF6  GPIO in (bijvoorbeeld schakelaars)
-//   0xF7  Interrupt-aan   bit 0 = timer, bit 1 = UART ontvangen
-module mmio_f #(parameter DIV = 16, parameter TDIV = 1, parameter DATA = "data.hex", parameter DLOAD = 0) (
-  input        clk,
-  input        rst_n,
-  input        we,
-  input        rd,
-  input  [7:0] addr,
-  input  [7:0] wdata,
-  output reg [7:0] rdata,
-  output       txd,
-  input        rxd,
-  input  [7:0] gpio_in,
-  output reg [7:0] gpio_out,
-  output       irq
-);
-  // ---- RAM ----
-  wire [7:0] ram_dout;
-  dmem_s #(DATA, DLOAD) ram(clk, we && (addr < 8'hF0), addr, wdata, ram_dout);   // blok-RAM: synchroon lezen
-
-  // ---- UART zender: 1 startbit, 8 databits (laagste eerst), 1 stopbit ----
-  reg [9:0]  tx_frame;
-  reg [3:0]  tx_n;
-  reg [15:0] tx_cnt;
-  wire tx_busy = (tx_n != 0);
-  assign txd = tx_busy ? tx_frame[0] : 1'b1;
-
-  // ---- UART ontvanger, met een synchronizer voor de ingang (week 6) ----
-  reg rxd_s1, rxd_s2;
-  reg        rx_busy, rx_ready;
-  reg [3:0]  rx_n;
-  reg [15:0] rx_cnt;
-  reg [7:0]  rx_shift, rx_data;
-
-  // ---- Timer: telt 'tikken'. Een tik is TDIV klokcycli (TDIV = 1: elke cyclus; op een FPGA bijvoorbeeld 1 ms) ----
-  reg [7:0]  t_reload, t_cnt;
-  reg        t_pend;
-  reg [15:0] t_pre;
-  wire       t_tick = (TDIV <= 1) ? 1'b1 : (t_pre == TDIV - 1);
-
-  reg [7:0] irq_en;
-
-  assign irq = (t_pend & irq_en[0]) | (rx_ready & irq_en[1]);
-
-  always @(posedge clk or negedge rst_n)
-    if (!rst_n) begin
-      tx_frame <= 10'h3FF; tx_n <= 0; tx_cnt <= 0;
-      rxd_s1 <= 1; rxd_s2 <= 1; rx_busy <= 0; rx_ready <= 0; rx_n <= 0; rx_cnt <= 0; rx_shift <= 0; rx_data <= 0;
-      t_reload <= 0; t_cnt <= 0; t_pend <= 0; t_pre <= 0; irq_en <= 0; gpio_out <= 0;
-    end else begin
-      // schrijfacties van de CPU
-      if (we) case (addr)
-        8'hF0: if (!tx_busy) begin tx_frame <= {1'b1, wdata, 1'b0}; tx_n <= 4'd10; tx_cnt <= DIV - 1; end
-        8'hF2: t_reload <= wdata;
-        8'hF3: t_pend <= 1'b0;
-        8'hF5: gpio_out <= wdata;
-        8'hF7: irq_en <= wdata;
-        default: ;
-      endcase
-
-      // zender
-      if (tx_busy && !(we && addr == 8'hF0)) begin
-        if (tx_cnt == 0) begin
-          tx_cnt <= DIV - 1;
-          tx_frame <= {1'b1, tx_frame[9:1]};
-          tx_n <= tx_n - 1;
-        end else tx_cnt <= tx_cnt - 1;
-      end
-
-      // ontvanger
-      rxd_s1 <= rxd; rxd_s2 <= rxd_s1;
-      if (rd && addr == 8'hF0) rx_ready <= 1'b0;
-      if (!rx_busy) begin
-        if (!rxd_s2) begin rx_busy <= 1; rx_cnt <= DIV / 2; rx_n <= 0; end
-      end else begin
-        if (rx_cnt == 0) begin
-          rx_cnt <= DIV - 1;
-          if (rx_n == 0) begin
-            if (rxd_s2) rx_busy <= 0;                       // valse start: afbreken
-            rx_n <= 1;
-          end else if (rx_n <= 8) begin
-            rx_shift <= {rxd_s2, rx_shift[7:1]}; rx_n <= rx_n + 1;
-          end else begin
-            if (rxd_s2) begin rx_data <= rx_shift; rx_ready <= 1'b1; end
-            rx_busy <= 0;
-          end
-        end else rx_cnt <= rx_cnt - 1;
-      end
-
-      // timer
-      t_pre <= t_tick ? 16'd0 : t_pre + 16'd1;
-      if (t_reload != 0) begin
-        if (t_tick) begin
-          if (t_cnt >= t_reload - 1) begin t_cnt <= 0; t_pend <= 1'b1; end
-          else t_cnt <= t_cnt + 1;
-        end
-      end else t_cnt <= 0;
-    end
-
-  // Lezen van de apparaten wordt, net als het RAM, een klokperiode vastgehouden.
-  reg [7:0] io_comb, io_q;
-  reg       ram_sel_q;
-  always_comb begin
-    case (addr)
-      8'hF0: io_comb = rx_data;
-      8'hF1: io_comb = {6'b0, rx_ready, tx_busy};
-      8'hF2: io_comb = t_reload;
-      8'hF3: io_comb = {7'b0, t_pend};
-      8'hF5: io_comb = gpio_out;
-      8'hF6: io_comb = gpio_in;
-      8'hF7: io_comb = irq_en;
-      default: io_comb = 8'h00;
-    endcase
-  end
-  always @(posedge clk) begin
-    io_q <= io_comb;
-    ram_sel_q <= (addr < 8'hF0);
-  end
-  always_comb rdata = ram_sel_q ? ram_dout : io_q;
-endmodule
+```{.verilog include="cpu_fpga/mmio_f.v"}
 ```
 
 ### De CPU en het toplevel
 
-```verilog
-// FILE: cpu_fpga/cpu_f.v
-// W8F: de FPGA-vriendelijke W8I. Datageheugen in blok-RAM, LD kost 3 cycli.
-module cpu_f #(
-  parameter PROG = "prog.hex", parameter LOAD = 1, parameter DIV = 16, parameter TDIV = 1,
-  parameter DATA = "data.hex", parameter DLOAD = 0
-) (
-  input         clk,
-  input         rst_n,
-  output        halted,
-  output [7:0]  pc_out,
-  output [7:0]  r0, r1, r2, r3, r4, r5, r6, r7,
-  output        flag_z, flag_n, flag_c, flag_v,
-  output        txd,
-  input         rxd,
-  input  [7:0]  gpio_in,
-  output [7:0]  gpio_out
-);
-  wire pc_inc, pc_load, pc_src, ir_we, reg_we, wa_r7, ra_sel, rb_sel, alu_ir, flags_we, mem_we, mem_rd;
-  wire int_enter, reti, ei, di, ie, irq;
-  wire [1:0] wb_sel, b_sel;
-  wire [2:0] alu_op, cond;
-  wire [3:0] op;
-  wire [7:0] imem_addr, dmem_addr, dmem_wdata, dmem_rdata;
-  wire [15:0] imem_dout;
-
-  datapath_i dp(
-    .clk(clk), .rst_n(rst_n),
-    .pc_inc(pc_inc), .pc_load(pc_load), .pc_src(pc_src), .ir_we(ir_we),
-    .reg_we(reg_we), .wa_r7(wa_r7), .ra_sel(ra_sel), .rb_sel(rb_sel),
-    .b_sel(b_sel), .alu_ir(alu_ir), .alu_op(alu_op), .wb_sel(wb_sel), .flags_we(flags_we),
-    .int_enter(int_enter), .reti(reti), .ei(ei), .di(di), .ie_out(ie),
-    .imem_addr(imem_addr), .imem_dout(imem_dout),
-    .dmem_addr(dmem_addr), .dmem_wdata(dmem_wdata), .dmem_rdata(dmem_rdata),
-    .op(op), .cond(cond),
-    .flag_z(flag_z), .flag_n(flag_n), .flag_c(flag_c), .flag_v(flag_v),
-    .pc_out(pc_out), .r0(r0), .r1(r1), .r2(r2), .r3(r3), .r4(r4), .r5(r5), .r6(r6), .r7(r7)
-  );
-
-  control_f ctl(
-    .clk(clk), .rst_n(rst_n), .op(op), .cond(cond),
-    .flag_z(flag_z), .flag_n(flag_n), .flag_c(flag_c), .flag_v(flag_v), .irq(irq), .ie(ie),
-    .pc_inc(pc_inc), .pc_load(pc_load), .pc_src(pc_src), .ir_we(ir_we),
-    .reg_we(reg_we), .wa_r7(wa_r7), .ra_sel(ra_sel), .rb_sel(rb_sel),
-    .alu_ir(alu_ir), .flags_we(flags_we), .mem_we(mem_we),
-    .wb_sel(wb_sel), .b_sel(b_sel), .alu_op(alu_op), .mem_rd(mem_rd),
-    .int_enter(int_enter), .reti(reti), .ei(ei), .di(di), .halted(halted)
-  );
-
-  imem #(PROG, LOAD) im(imem_addr, imem_dout);
-  mmio_f #(DIV, TDIV, DATA, DLOAD) io(clk, rst_n, mem_we, mem_rd, dmem_addr, dmem_wdata, dmem_rdata,
-                 txd, rxd, gpio_in, gpio_out, irq);
-endmodule
+```{.verilog include="cpu_fpga/cpu_f.v"}
 ```
 
-```verilog
-// FILE: cpu_fpga/fpga_top_f.v
-// Het toplevel voor een FPGA-bord: klok, een resetknop, LED's en een seriële poort.
-// De LED's op veel borden zijn 'actief laag' (0 = aan), vandaar led_n.
-module fpga_top_f #(
-  parameter CLK_HZ = 27_000_000,       // klokfrequentie van het bord
-  parameter BAUD   = 115_200
-) (
-  input        clk,
-  input        btn_rst_n,              // resetknop (0 = ingedrukt)
-  output [5:0] led_n,
-  output       uart_tx,
-  input        uart_rx
-);
-  localparam DIV  = CLK_HZ / BAUD;     // klokcycli per UART-bit
-  localparam TDIV = CLK_HZ / 1000;     // klokcycli per timertik (1 ms)
-
-  // Reset: laat de knop los synchroon met de klok los (twee flipflops), zoals in week 6.
-  reg [1:0] rst_sync = 2'b00;
-  always @(posedge clk or negedge btn_rst_n)
-    if (!btn_rst_n) rst_sync <= 2'b00;
-    else            rst_sync <= {rst_sync[0], 1'b1};
-  wire rst_n = rst_sync[1];
-
-  wire [7:0] gpio_out;
-  cpu_f #("hello.hex", 1, DIV, TDIV, "hello.dat", 1) cpu(
-    .clk(clk), .rst_n(rst_n), .halted(),
-    .pc_out(), .r0(), .r1(), .r2(), .r3(), .r4(), .r5(), .r6(), .r7(),
-    .flag_z(), .flag_n(), .flag_c(), .flag_v(),
-    .txd(uart_tx), .rxd(uart_rx), .gpio_in(8'h00), .gpio_out(gpio_out)
-  );
-
-  assign led_n = ~gpio_out[5:0];
-endmodule
+```{.verilog include="cpu_fpga/fpga_top_f.v"}
 ```
 
 ## 4. Verificatie van W8F
@@ -521,71 +137,7 @@ endmodule
 
 W8I (asynchroon RAM) en W8F draaien dezelfde zes programma's tegelijk. Registers, vlaggen en het hele RAM moeten identiek zijn, en W8F mag precies één cyclus per uitgevoerde `LD` langer doen. Die laatste eis is scherp: klopt het aantal cycli niet exact, dan gebeurt er iets wat je niet begrijpt.
 
-```verilog
-// FILE: cpu_fpga/tb_f_compare.v
-// Dezelfde programma's op W8I (asynchroon RAM) en W8F (blok-RAM, LD in 3 cycli):
-// het resultaat moet identiek zijn, en W8F mag precies één cyclus per uitgevoerde LD langer doen.
-module pair_f #(parameter P = "", parameter D = "none", parameter DL = 0) (
-  input clk, input rst_n,
-  output done,
-  output reg [31:0] cyc_i, cyc_f, loads,
-  output reg same
-);
-  wire hi, hf;
-  wire [7:0] ipc, i0, i1, i2, i3, i4, i5, i6, i7, fpc, f0, f1, f2, f3, f4, f5, f6, f7;
-  wire iz, in_, ic, iv, fz, fn, fc, fv;
-  cpu_i #(P, 1, 16, 1, D, DL) a(.clk(clk), .rst_n(rst_n), .halted(hi), .pc_out(ipc), .r0(i0), .r1(i1), .r2(i2), .r3(i3),
-      .r4(i4), .r5(i5), .r6(i6), .r7(i7), .flag_z(iz), .flag_n(in_), .flag_c(ic), .flag_v(iv), .rxd(1'b1), .gpio_in(8'd0));
-  cpu_f #(P, 1, 16, 1, D, DL) b(.clk(clk), .rst_n(rst_n), .halted(hf), .pc_out(fpc), .r0(f0), .r1(f1), .r2(f2), .r3(f3),
-      .r4(f4), .r5(f5), .r6(f6), .r7(f7), .flag_z(fz), .flag_n(fn), .flag_c(fc), .flag_v(fv), .rxd(1'b1), .gpio_in(8'd0));
-  assign done = hi & hf;
-  initial begin cyc_i = 0; cyc_f = 0; loads = 0; end
-  always @(posedge clk) if (rst_n) begin
-    if (!hi) cyc_i <= cyc_i + 1;
-    if (!hf) begin cyc_f <= cyc_f + 1; if (b.mem_rd) loads <= loads + 1; end
-  end
-  integer k;
-  always @* begin
-    same = ({i0, i1, i2, i3, i4, i5, i6, i7} === {f0, f1, f2, f3, f4, f5, f6, f7}) && ({iz, in_, ic, iv} === {fz, fn, fc, fv});
-    for (k = 0; k < 240; k = k + 1) if (a.io.ram.mem[k] !== b.io.ram.mem[k]) same = 0;
-  end
-endmodule
-
-module tb_f_compare;
-  reg clk = 0, rst_n = 0;
-  wire [5:0] d, s;
-  wire [31:0] ci0, cf0, l0, ci1, cf1, l1, ci2, cf2, l2, ci3, cf3, l3, ci4, cf4, l4, ci5, cf5, l5;
-  integer fouten = 0;
-  pair_f #("sum.hex")                  p0(clk, rst_n, d[0], ci0, cf0, l0, s[0]);
-  pair_f #("mul.hex")                  p1(clk, rst_n, d[1], ci1, cf1, l1, s[1]);
-  pair_f #("sort.hex", "sort.dat", 1)  p2(clk, rst_n, d[2], ci2, cf2, l2, s[2]);
-  pair_f #("primes.hex")               p3(clk, rst_n, d[3], ci3, cf3, l3, s[3]);
-  pair_f #("gcd.hex")                  p4(clk, rst_n, d[4], ci4, cf4, l4, s[4]);
-  pair_f #("calls.hex")                p5(clk, rst_n, d[5], ci5, cf5, l5, s[5]);
-  always #5 clk = ~clk;
-
-  task rapport(input [127:0] naam, input [31:0] ci, input [31:0] cf, input [31:0] l, input gelijk);
-    begin
-      $display("%0s  W8I: %5d cycli   W8F: %5d cycli   (%0d LD's)   resultaat %0s", naam, ci, cf, l, gelijk ? "identiek" : "VERSCHILT");
-      if (!gelijk) fouten = fouten + 1;
-      if (cf !== ci + l) begin fouten = fouten + 1; $display("  FAIL: verwacht %0d cycli", ci + l); end
-    end
-  endtask
-
-  initial begin
-    #22 rst_n = 1;
-    wait (&d);
-    #20;
-    rapport("som       ", ci0, cf0, l0, s[0]);
-    rapport("mul 16bit ", ci1, cf1, l1, s[1]);
-    rapport("sorteren  ", ci2, cf2, l2, s[2]);
-    rapport("priem     ", ci3, cf3, l3, s[3]);
-    rapport("ggd       ", ci4, cf4, l4, s[4]);
-    rapport("subroutine", ci5, cf5, l5, s[5]);
-    if (fouten == 0) $display("PASS: W8F geeft overal hetzelfde resultaat als W8I en kost precies één extra cyclus per LD");
-    $finish;
-  end
-endmodule
+```{.verilog include="cpu_fpga/tb_f_compare.v"}
 ```
 
 De meting:
@@ -603,9 +155,6 @@ De meting:
 
 De tests uit week 22 en 23 draaien ook op W8F. Het enige verschil is de naam van de CPU. Maak er kopieën van met zoeken-en-vervangen (bijvoorbeeld met `sed`):
 
-<!-- COPYSED cpu_irq/tb_irq.v cpu_fpga/tb_irq_f.v "module tb_irq;"=>"module tb_irq_f;" "cpu_i #("=>"cpu_f #(" -->
-<!-- COPYSED cpu_irq/tb_blink.v cpu_fpga/tb_blink_f.v "module tb_blink;"=>"module tb_blink_f;" "cpu_i #("=>"cpu_f #(" -->
-<!-- COPYSED cpu_irq/tb_fpga_top.v cpu_fpga/tb_fpga_top_f.v "module tb_fpga_top;"=>"module tb_fpga_top_f;" "fpga_top #(CLK_HZ, BAUD) dut("=>"fpga_top_f #(CLK_HZ, BAUD) dut(" -->
 
 ```text
 sed 's/module tb_irq;/module tb_irq_f;/; s/cpu_i #(/cpu_f #(/' tb_irq.v > tb_irq_f.v
@@ -655,41 +204,13 @@ In week 23 ging het mis: de simulatie slaagde, maar de hardware was leeg. Een ga
 
 Voor een snelle simulatie gebruiken we dezelfde kleine klok als in de testbench van week 23:
 
-```verilog
-// FILE: cpu_fpga/fpga_top_small.v
-// Dezelfde FPGA-top, maar met een kleine "klok" zodat de gate-level simulatie van de netlijst snel is.
-module fpga_top_small(
-  input        clk,
-  input        btn_rst_n,
-  output [5:0] led_n,
-  output       uart_tx,
-  input        uart_rx
-);
-  fpga_top_f #(16000, 1000) t(.clk(clk), .btn_rst_n(btn_rst_n), .led_n(led_n), .uart_tx(uart_tx), .uart_rx(uart_rx));
-endmodule
+```{.verilog include="cpu_fpga/fpga_top_small.v"}
 ```
 
-<!-- COPYSED cpu_fpga/tb_fpga_top_f.v cpu_fpga/tb_gate.v "module tb_fpga_top_f;"=>"module tb_gate;" "fpga_top_f #(CLK_HZ, BAUD) dut("=>"fpga_top_small dut(" -->
 
 De testbench voor de netlijst is `tb_fpga_top_f.v` met twee vervangingen: `module tb_gate;` en `fpga_top_small dut(`.
 
-```bash
-# FILE: cpu_fpga/gatesim.sh
-#!/bin/bash
-# Gate-level simulatie: de testbench draait op de door Yosys gesynthetiseerde netlijst (LUT's, flipflops, blok-RAM)
-# in plaats van op je Verilog. Zo bewijs je dat de synthese het ontwerp niet veranderd heeft.
-# Gebruik: bash gatesim.sh        (na fpga_flow.sh; gebruikt dezelfde VENV)
-set -e
-VENV=${VENV:-$HOME/fpga-venv}
-YOSYS="$VENV/bin/yowasp-yosys"
-CELLS=$(ls "$VENV"/lib/python*/site-packages/yowasp_yosys/share/ice40/cells_sim.v)
-SOURCES="alu.v idecode.v memories.v memories_f.v datapath_i.v control_f.v mmio_f.v cpu_f.v fpga_top_f.v fpga_top_small.v"
-python3 asm.py hello.asm
-cp -n hello.hex prog.hex 2>/dev/null || true
-cp -n hello.dat data.hex 2>/dev/null || true
-"$YOSYS" -q -p "read_verilog -sv $SOURCES; synth_ice40 -flatten -top fpga_top_small; write_verilog -noattr netlist_small.v"
-iverilog -g2012 -o gate.vvp tb_gate.v netlist_small.v "$CELLS"
-vvp gate.vvp | grep -v finish
+```{.bash include="cpu_fpga/gatesim.sh"}
 ```
 
 ```text

@@ -1,4 +1,3 @@
-// FILE: week09/tb_sv.v
 module tb_sv;
   logic clk = 0, rst_n = 0, en = 0;
   logic [7:0] q;

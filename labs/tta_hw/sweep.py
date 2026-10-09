@@ -1,4 +1,3 @@
-# FILE: tta_hw/sweep.py
 """Zoekt hoe snel de klok van het 74HC-bord kan, en of het ontwerp robuust is voor snelle en trage chips.
 Gebruik:  python3 sweep.py          (duurt een minuut of twee)"""
 import subprocess
