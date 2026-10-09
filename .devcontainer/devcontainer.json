@@ -10,7 +10,8 @@
       "extensions": [
         "mshr-h.veriloghdl",
         "surfer-project.surfer",
-        "ms-python.python"
+        "ms-python.python",
+        "anthropic.claude-code"
       ]
     }
   }
