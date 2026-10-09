@@ -5,7 +5,7 @@
   pdf/cpu-design-cursus-print.pdf           om af te drukken (recto-verso, rugmarge): tekst en antwoorden
   pdf/cpu-design-cursus-codeboek-print.pdf  om af te drukken: de lange listings, als tweede map
 
-Nodig: pandoc (3.1 of nieuwer) en typst (0.13). Gebruik:
+Nodig: pandoc (3.1 of nieuwer) en typst (0.15). Gebruik:
   ./build.py              alle drie
   ./build.py scherm       alleen de schermversie (sneller tijdens het schrijven)
 """
@@ -113,7 +113,8 @@ def main():
     for naam in welke:
         bestand, inhoud, modus, doel = uitgaven[naam]
         (uit / bestand).write_text(inhoud)
-        subprocess.run([TYPST, "compile", "--root", str(root), "--font-path", str(root / "boek" / "fonts"),
+        zonder_tags = ["--no-pdf-tags"] if modus == "print" else []  # op papier geen nut, en scheelt veel grootte
+        subprocess.run([TYPST, "compile", *zonder_tags, "--root", str(root), "--font-path", str(root / "boek" / "fonts"),
                         "--ignore-system-fonts", "--input", f"modus={modus}", "--input", f"versie={versie}",
                         "--input", f"uitgave={naam}", str(uit / bestand), str(pdf / doel)], check=True, cwd=root)
         print(f"ok  pdf/{doel}")

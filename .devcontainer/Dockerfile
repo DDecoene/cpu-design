@@ -9,7 +9,7 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && rm -rf /var/lib/apt/lists/*
 
 # Typst zet het boek (build.py). De versie ligt vast, zodat de opmaak niet verschuift.
-ARG TYPST_VERSION=0.13.1
+ARG TYPST_VERSION=0.15.1
 RUN arch=$(uname -m) \
     && curl -fsSL https://github.com/typst/typst/releases/download/v${TYPST_VERSION}/typst-${arch}-unknown-linux-musl.tar.xz \
     | tar -xJ -C /usr/local/bin --strip-components=1 typst-${arch}-unknown-linux-musl/typst

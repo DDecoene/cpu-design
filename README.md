@@ -65,7 +65,7 @@ python3 test_labs.py 04 cpu     # alleen labs/week04 en labs/cpu
 
 Bij elke push bouwt GitHub Actions het boek (`.github/workflows/release.yml`); bij een tag komen de PDF's bij de release. Zelf bouwen kan ook.
 
-Je hebt [pandoc](https://pandoc.org/) 3.1 of nieuwer en [Typst](https://typst.app/) 0.13 nodig. In de container staan ze al klaar.
+Je hebt [pandoc](https://pandoc.org/) 3.1 of nieuwer en [Typst](https://typst.app/) 0.15 nodig. In de container staan ze al klaar.
 
 ```text
 ./build.py            # alle drie de PDF's (ongeveer een halve minuut)
