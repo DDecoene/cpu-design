@@ -135,7 +135,7 @@ We willen `mmio_f` (de geheugenkaart met UART, timer en GPIO uit week 22 en 24) 
 
 Eén ding vraagt aandacht. Bij W8F duurt een `LD` drie klokken: de CPU biedt het adres aan, het geheugen en de apparaten houden hun antwoord een klok vast, en in de derde klok neemt de CPU de waarde over. Ons nieuwe apparaat moet dezelfde afspraak volgen, en dat doet het door `v_q` en `vsel_q` te registreren zoals `mmio_f` dat met zijn eigen waarden doet. Sla je dat over, dan leest de CPU een klok te vroeg of te laat en zie je willekeurige waarden. Zo'n fout is moeilijk te vinden zonder golfvorm.
 
-De CPU zelf wordt `cpu_v`: dezelfde `cpu_f` van week 24, met drie aanpassingen. Het bestand wordt door het extractiescript van de cursus uit `cpu_fpga/cpu_f.v` gemaakt (zie de commentaarregel in de bron):
+De CPU zelf wordt `cpu_v`: dezelfde `cpu_f` van week 24, met drie aanpassingen. Het bestand is een kopie van `cpu_fpga/cpu_f.v` met deze wijzigingen:
 
 ```text
   module cpu_f #(...       →  module cpu_v #(...

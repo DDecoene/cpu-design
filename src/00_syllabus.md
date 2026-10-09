@@ -109,8 +109,9 @@ Hardware (ongeveer €200 tot €300 in totaal, gespreid over de hele cursus):
 | Breadboards (2×), jumperdraden, USB-voedingsmodule voor breadboard | €13 | 1 |
 | LED's, weerstandenassortiment, drukknoppen, dip-switches | €15 | 1 |
 | 74HC-chips (00, 04, 08, 32, 86, 138, 151, 161, 245, 273, 574, ...) | €20–30 | 2 |
-| 28C256 EEPROM, 62256 SRAM, 555-timer, kristaloscillator | €10–15 | 6 |
-| Arduino Nano (als EEPROM-programmer en voor experimenten) | €5–10 | 8 |
+| 555-timer, kristaloscillator | €3–5 | 6 |
+| 28C256 EEPROM, 62256 SRAM (alleen voor het 74HC-bord) | €8–10 | 25 |
+| Arduino Nano (als EEPROM-programmer, of een losse programmer) | €5–10 | 25 |
 | USB-logic-analyzer (8 kanalen, Saleae-kloon) | €10 | 8 |
 | FPGA-bord (iCE40, Tang Nano 9K of vergelijkbaar, met open-source toolchain) | €20–50 | 23 |
 | Onderdelen voor het 74HC-bord (59 chips, voetjes, condensatoren, LED's) en de print | ca. €80–150 | 25 |

@@ -165,7 +165,7 @@ De meting van deze CPU (W8I uit week 22) op een iCE40 HX8K met 27 MHz als doel:
 |---------|--------|
 | LUT4 | 3 202 |
 | Flipflops | 2 148 |
-| Gebruikte logische elementen (LC) | 5 297 van 7 680 (68 %) |
+| Gebruikte logische elementen (LC) | 5 297 van 7 680 (69 %) |
 | Blok-RAM | 0 |
 | Maximale klokfrequentie | ongeveer 34 MHz |
 

@@ -61,7 +61,7 @@ Een sprong naar een label dat later in het programma staat, is lastig: op het mo
 
 ## 3. De assembler
 
-Hieronder staat het hele programma, ongeveer 190 regels. Lees het van boven naar beneden. `assemble(source)` is de kern: pas 1 en pas 2. `parse_number`, `reg`, `imm8` en `mem_operand` zijn kleine hulpfuncties met nette foutmeldingen. `main` leest een bestand en schrijft `.hex` (instructies) en `.dat` (data).
+Hieronder staat het hele programma, ongeveer 200 regels. Lees het van boven naar beneden. `assemble(source)` is de kern: pas 1 en pas 2. `parse_number`, `reg`, `imm8` en `mem_operand` zijn kleine hulpfuncties met nette foutmeldingen. `main` leest een bestand en schrijft `.hex` (instructies) en `.dat` (data).
 
 ```{.python include="cpu/asm.py"}
 ```

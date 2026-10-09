@@ -124,7 +124,7 @@ De waarheidstabel voor twee ingangen:
 | 1 | 0 | 0 | 1 | 1 | 0 | 1 |
 | 1 | 1 | 1 | 1 | 0 | 0 | 0 |
 
-XOR is de poort van het optellen. In binair is 1 + 1 = 10: de somBit is 0, precies wat XOR doet, en er is een carry. Volgende week gebruiken we dat.
+XOR is de poort van het optellen. In binair is 1 + 1 = 10: de som is 0, precies wat XOR doet, en er is een carry. Volgende week gebruiken we dat.
 
 ## 5. NAND is universeel
 
