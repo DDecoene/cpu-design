@@ -48,7 +48,7 @@ Begin met het hoofdstuk Welkom: dat beschrijft de werkwijze en welke software en
 
 ## Werkomgeving in een container
 
-De map `.devcontainer/` beschrijft een kant-en-klare omgeving. Open de repo in GitHub Codespaces of in VS Code met de Dev Containers-extensie ("Reopen in Container"). Daarin staan Icarus Verilog, Python, Yosys en nextpnr (als YoWASP in `~/fpga-venv`, zoals week 23 beschrijft), pandoc en Typst klaar, plus de VS Code-extensies voor Verilog en Surfer (golfvormen). Bij het aanmaken draait de container meteen `test_labs.py`.
+De map `.devcontainer/` beschrijft een kant-en-klare omgeving. Open de repo in GitHub Codespaces of in VS Code met de Dev Containers-extensie ("Reopen in Container"). Daarin staan Icarus Verilog, Python, Yosys en nextpnr (als YoWASP in `~/fpga-venv`, zoals week 23 beschrijft), pandoc, Typst en de GitHub-CLI `gh` klaar, plus de VS Code-extensies voor Verilog en Surfer (golfvormen). Bij het aanmaken draait de container meteen `test_labs.py`.
 
 KiCad (week 25) en het programmeren van een echt FPGA-bord zitten er niet in: daarvoor heb je je eigen computer nodig.
 

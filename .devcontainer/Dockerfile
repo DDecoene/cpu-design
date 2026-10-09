@@ -1,11 +1,11 @@
 # Werkomgeving voor de CPU Design Cursus: simuleren, FPGA-synthese en het boek bouwen.
 FROM mcr.microsoft.com/devcontainers/base:trixie
 
-# Icarus Verilog (simulatie), Python (assemblers en tests) en pandoc (build.py)
+# Icarus Verilog (simulatie), Python (assemblers en tests), pandoc (build.py) en gh (GitHub)
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && apt-get install -y --no-install-recommends \
        iverilog python3 python3-venv make \
-       pandoc curl xz-utils ca-certificates \
+       pandoc gh curl xz-utils ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # Typst zet het boek (build.py). De versie ligt vast, zodat de opmaak niet verschuift.
