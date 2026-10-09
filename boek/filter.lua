@@ -38,7 +38,7 @@ local function str_lit(s)
 end
 
 local function label(id)
-  id = id:gsub("[^%w%-_]", "")
+  id = id:gsub("[^A-Za-z0-9%-_]", "")
   if id == "" then return "" end
   return " <" .. meta_sleutel .. "-" .. id .. ">"
 end
