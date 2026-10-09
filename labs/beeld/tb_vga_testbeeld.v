@@ -1,4 +1,3 @@
-// FILE: beeld/tb_vga_testbeeld.v
 // Het testbeeld bekijken met de virtuele monitor en elke pixel van het eerste volledige beeld controleren.
 module tb_vga_testbeeld;
   reg pclk = 0, rst_n = 0;

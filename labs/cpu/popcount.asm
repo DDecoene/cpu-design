@@ -1,4 +1,3 @@
-; FILE: cpu/popcount.asm
 ; Telt de bits die 1 zijn in R1 (0xB7 heeft er 6). Resultaat in R2.
         LDI  R1, 0xB7
         LDI  R2, 0

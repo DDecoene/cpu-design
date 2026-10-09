@@ -1,4 +1,3 @@
-// FILE: memhier/cache.v
 // Een direct-mapped cache voor 8-bit adressen: 16 regels van 4 bytes (64 bytes in totaal).
 // Adres: [7:6] tag, [5:2] index (regel), [1:0] plaats in de regel. Write-through, geen allocatie bij schrijven.
 

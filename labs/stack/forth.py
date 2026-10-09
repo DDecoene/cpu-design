@@ -1,4 +1,3 @@
-# FILE: stack/forth.py
 """Een kleine Forth-compiler voor de stackmachine S8.
 
 Gebruik:  python3 forth.py programma.fs        -> programma.hex

@@ -1,4 +1,3 @@
-// FILE: week04/tb_adder4.v
 module tb_adder4;
   reg  [3:0] a, b;
   reg        cin;

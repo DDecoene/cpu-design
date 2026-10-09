@@ -1,4 +1,3 @@
-// FILE: week03/tb_fn.v
 module tb_fn;
   reg a, b, c, d;
   wire y1, y2;

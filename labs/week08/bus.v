@@ -1,4 +1,3 @@
-// FILE: week08/bus.v
 // Drie bronnen op één bus. Elk zet zijn data alleen op de bus als zijn oe aan staat.
 module bus3(
   input  [7:0] a, b, c,

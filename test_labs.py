@@ -1,39 +1,19 @@
 #!/usr/bin/env python3
-"""Haalt code uit src/*.md (blokken met '// FILE: map/naam.v', '# FILE: ...' of '; FILE: ...') naar labs/,
-voert <!-- COPY bron doel --> uit, assembleert .asm-bestanden, compileert en draait elke tb_*.v met Icarus Verilog
-en draait test_*.py. Een lab slaagt als er geen FAIL in de output staat en er minstens één PASS in voorkomt.
-Gebruik: ./extract_labs.py            (alles)
-         ./extract_labs.py 04 cpu     (alleen labs/week04 en labs/cpu)"""
-import re, sys, subprocess, shutil, pathlib, glob
+"""Draait alle labtests: assembleert .asm-, .fs- en .tta-bestanden, compileert en draait elke tb_*.v
+met Icarus Verilog en draait test_*.py. Controleert ook dat elke include="..." in src/*.md bestaat.
+Een lab slaagt als er geen FAIL in de output staat en er minstens één PASS in voorkomt.
+Gebruik: ./test_labs.py            (alles)
+         ./test_labs.py 04 cpu     (alleen labs/week04 en labs/cpu)"""
+import re, sys, subprocess, pathlib, glob
 root = pathlib.Path(__file__).parent
 labs = root / "labs"
-pat = re.compile(r"```[a-zA-Z]*\n((?://|#|;|\\) FILE: (\S+)\n.*?)```", re.S)
-copy_pat = re.compile(r"<!--\s*COPY\s+(\S+)\s+(\S+)\s*-->")
-copysed_pat = re.compile(r"<!--\s*COPYSED\s+(\S+)\s+(\S+)((?:\s+\"[^\"]*\"=>\"[^\"]*\")+)\s*-->")
-pair_pat = re.compile(r'"([^"]*)"=>"([^"]*)"')
-directive = re.compile(r"<!--\s*(COPYSED|COPY)\s")
-mds = sorted(glob.glob(str(root / "src" / "week*.md")))
-for md in mds:
-    text = pathlib.Path(md).read_text()
-    for body, path in pat.findall(text):
-        out = labs / path
-        out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(body)
-for md in mds:
-    text = pathlib.Path(md).read_text()
-    for m in re.finditer(r"<!--\s*(COPYSED|COPY)\s.*?-->", text, re.S):
-        d = m.group(0)
-        if m.group(1) == "COPYSED":
-            src, dst, pairs = copysed_pat.match(d).groups()
-            body = (labs / src).read_text()
-            for old, new in pair_pat.findall(pairs):
-                body = body.replace(old, new)
-            (labs / dst).parent.mkdir(parents=True, exist_ok=True)
-            (labs / dst).write_text(body)
-        else:
-            src, dst = copy_pat.match(d).groups()
-            (labs / dst).parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy(labs / src, labs / dst)
+
+# elke include="..." in src/*.md moet naar een bestaand bestand in labs/ wijzen
+inc = re.compile(r'include="([^"]+)"')
+for md in sorted(glob.glob(str(root / "src" / "*.md"))):
+    for path in inc.findall(pathlib.Path(md).read_text()):
+        if not (labs / path).is_file():
+            print(f"ONTBREEKT labs/{path} (uit {pathlib.Path(md).name})"); sys.exit(1)
 
 bad = 0
 only = sys.argv[1:]

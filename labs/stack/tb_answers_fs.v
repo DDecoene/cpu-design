@@ -1,4 +1,3 @@
-// FILE: stack/tb_answers_fs.v
 module tb_answers_fs;
   reg clk = 0, rst_n = 0;
   wire halted; wire [7:0] pc, tos; wire [3:0] dsp;

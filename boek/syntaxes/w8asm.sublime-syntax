@@ -1,0 +1,22 @@
+%YAML 1.2
+---
+# Kleuring voor de assembly van W8, S8 en T8 (.asm en .tta).
+name: W8 assembly
+file_extensions: [asm, tta]
+scope: source.w8asm
+contexts:
+  main:
+    - match: ';.*$'
+      scope: comment.line.semicolon.w8asm
+    - match: '^\s*[A-Za-z_][\w]*:'
+      scope: entity.name.function.w8asm
+    - match: '\.[A-Za-z]+\b'
+      scope: keyword.control.import.w8asm
+    - match: '#?-?\b(0[xX][0-9a-fA-F]+|0[bB][01]+|[0-9]+)\b'
+      scope: constant.numeric.w8asm
+    - match: '\b(R[0-7]|LR|SP|PC)\b'
+      scope: variable.language.w8asm
+    - match: '->'
+      scope: keyword.operator.w8asm
+    - match: '^\s*(\?N?[A-Z]+\s+)?[A-Za-z]+\b'
+      scope: keyword.control.w8asm

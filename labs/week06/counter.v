@@ -1,4 +1,3 @@
-// FILE: week06/counter.v
 module counter #(parameter W = 8) (
   input              clk,
   input              rst_n,

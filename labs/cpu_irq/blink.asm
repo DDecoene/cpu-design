@@ -1,4 +1,3 @@
-; FILE: cpu_irq/blink.asm
 ; Knipperlicht: de timer-interrupt wisselt bit 0 van de GPIO-uitgang (een LED). De hoofdlus doet niets.
         B    main
         .org 2

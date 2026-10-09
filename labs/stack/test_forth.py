@@ -1,4 +1,3 @@
-# FILE: stack/test_forth.py
 # Tests voor de Forth-compiler: bytes van kleine programma's, controlestructuren, foutmeldingen.
 from forth import compile_forth, ForthError
 

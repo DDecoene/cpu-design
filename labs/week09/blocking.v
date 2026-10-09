@@ -1,4 +1,3 @@
-// FILE: week09/blocking.v
 // Drie keer hetzelfde idee: een 3-staps vertraging voor een bit.
 module pipe_nb(input clk, input d, output reg q1, q2, q3);
   always @(posedge clk) begin

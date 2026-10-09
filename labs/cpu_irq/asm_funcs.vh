@@ -1,4 +1,3 @@
-// FILE: cpu/asm_funcs.vh
 // Mini-assembler in Verilog-functies: bouw een instructiewoord uit zijn velden.
 function [15:0] I_ALU(input [2:0] fn, input [2:0] rd, input [2:0] rs1, input [2:0] rs2);
   I_ALU = {4'h0, rd, rs1, rs2, fn};

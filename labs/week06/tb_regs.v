@@ -1,4 +1,3 @@
-// FILE: week06/tb_regs.v
 module tb_regs;
   reg clk = 0, rst_n = 0, en = 0, load = 0, sin = 0;
   reg  [7:0] d = 0;

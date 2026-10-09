@@ -1,4 +1,3 @@
-// FILE: cpu_irq/cpu_i.v
 // W8 met apparaten en interrupts.
 module cpu_i #(
   parameter PROG = "prog.hex", parameter LOAD = 1, parameter DIV = 16, parameter TDIV = 1,

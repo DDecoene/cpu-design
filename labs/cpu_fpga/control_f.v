@@ -1,4 +1,3 @@
-// FILE: cpu_fpga/control_f.v
 // Besturing voor de FPGA-vriendelijke W8F. Zelfde controlegeheugen als control_i, maar het datageheugen
 // geeft zijn gegevens pas een klokperiode na het adres (blok-RAM). Daarom heeft LD een derde stap.
 module control_f(

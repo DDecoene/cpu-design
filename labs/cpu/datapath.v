@@ -1,4 +1,3 @@
-// FILE: cpu/datapath.v
 // Het datapath: PC, instructieregister, registerbestand, ALU, vlaggen.
 // Alle besturingssignalen komen van buiten (de besturingseenheid).
 module datapath(

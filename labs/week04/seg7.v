@@ -1,4 +1,3 @@
-// FILE: week04/seg7.v
 // Uitgang: {a,b,c,d,e,f,g}, 1 = segment aan.
 module seg7(input [3:0] d, output reg [6:0] seg);
   always @* begin

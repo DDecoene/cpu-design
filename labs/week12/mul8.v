@@ -1,4 +1,3 @@
-// FILE: week12/mul8.v
 // 8x8 -> 16 bits, zonder teken, 8 cycli.
 module mul8(
   input             clk,

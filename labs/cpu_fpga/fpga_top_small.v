@@ -1,4 +1,3 @@
-// FILE: cpu_fpga/fpga_top_small.v
 // Dezelfde FPGA-top, maar met een kleine "klok" zodat de gate-level simulatie van de netlijst snel is.
 module fpga_top_small(
   input        clk,

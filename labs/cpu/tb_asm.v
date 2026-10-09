@@ -1,4 +1,3 @@
-// FILE: cpu/tb_asm.v
 // Draait zes door de assembler gemaakte programma's tegelijk, elk op zijn eigen CPU.
 module tb_asm;
   reg clk = 0, rst_n = 0;

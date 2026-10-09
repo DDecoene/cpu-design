@@ -1,4 +1,3 @@
-// FILE: week02/tb_nand_cmos.v
 module tb_nand_cmos;
   reg a, b;
   wire y;

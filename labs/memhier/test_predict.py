@@ -1,4 +1,3 @@
-# FILE: memhier/test_predict.py
 # Test van de ISS (tegen de resultaten van de Verilog-CPU) en van de voorspellers.
 from asm import assemble
 from w8iss import run

@@ -13,7 +13,8 @@ aangeeft of je iets hebt gewijzigd en je bewerking onder dezelfde licentie deelt
 
 ## Code: MIT
 
-Alle code in `labs/`, `extract_labs.py` en `build.sh` valt onder de MIT-licentie.
+Alle code in `labs/`, `boek/`, `test_labs.py` en `build.py` valt onder de MIT-licentie.
+Uitzondering: de letters in `boek/fonts/` (IBM Plex) vallen onder de SIL Open Font License, zie `boek/fonts/OFL.txt`.
 
 ```text
 MIT License

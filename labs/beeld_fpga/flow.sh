@@ -1,4 +1,3 @@
-# FILE: beeld_fpga/flow.sh
 #!/bin/bash
 # Synthese, plaatsen en routeren en een bitstream voor de beeldcomputer op een iCE40 UP5K, met de open-source tools.
 # Gebruik:  bash flow.sh          (vanuit labs/beeld_fpga; de bronbestanden staan in ../beeld)

@@ -1,4 +1,3 @@
-// FILE: cpu_irq/tb_blink.v
 module tb_blink;
   reg clk = 0, rst_n = 0;
   wire halted, txd;

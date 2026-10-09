@@ -1,4 +1,3 @@
-// FILE: beeld/spi_master.v
 // SPI-master, modus 0: de klok is in rust laag, de data wordt op de stijgende flank gelezen en na de dalende flank veranderd.
 // Een SD-kaart praat zo. Eerst de hoogste bit (MSB first). Twee snelheden: langzaam voor het opstarten van de kaart
 // (de SD-specificatie vraagt maximaal 400 kHz) en snel voor het lezen.

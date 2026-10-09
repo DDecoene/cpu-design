@@ -1,4 +1,3 @@
-// FILE: cpu/tb_programs.v
 `include "asm_funcs.vh"
 module tb_programs;
   reg clk = 0, rst_n = 0;

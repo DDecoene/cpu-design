@@ -1,4 +1,3 @@
-# FILE: cpu/asm.py
 #!/usr/bin/env python3
 """Assembler voor de 8-bit CPU van deze cursus.
 

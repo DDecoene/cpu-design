@@ -1,4 +1,3 @@
-// FILE: cpu/tb_trace.v
 `include "asm_funcs.vh"
 // Een "trace": bij elke uitgevoerde instructie een regel met PC, instructie en registers.
 module tb_trace;

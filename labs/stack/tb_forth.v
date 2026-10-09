@@ -1,4 +1,3 @@
-// FILE: stack/tb_forth.v
 // Vijf door de Forth-compiler gemaakte programma's, elk op zijn eigen stackmachine.
 module tb_forth;
   reg clk = 0, rst_n = 0;

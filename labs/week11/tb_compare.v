@@ -1,4 +1,3 @@
-// FILE: week11/tb_compare.v
 module tb_compare;
   reg  [7:0] a, b;
   wire [7:0] y;

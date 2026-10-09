@@ -1,4 +1,3 @@
-// FILE: week02/tb_universal.v
 module tb_universal;
   reg a, b;
   wire y_not, y_and, y_or, y_xor;

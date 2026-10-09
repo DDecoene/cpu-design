@@ -1,4 +1,3 @@
-# FILE: tt_t8/mkrom.py
 """Maakt van een T8-programma (.hex van tta_asm.py) een synthetiseerbaar ROM-module in Verilog.
 Gebruik:  python3 mkrom.py programma.hex 6 > rom_t8.v      (6 = aantal adresbits van de programmateller)
 Een echte chip heeft geen $readmemh nodig: het programma wordt een 'case'-tabel, dat is gewone logica."""

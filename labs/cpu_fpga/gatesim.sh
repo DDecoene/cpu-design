@@ -1,4 +1,3 @@
-# FILE: cpu_fpga/gatesim.sh
 #!/bin/bash
 # Gate-level simulatie: de testbench draait op de door Yosys gesynthetiseerde netlijst (LUT's, flipflops, blok-RAM)
 # in plaats van op je Verilog. Zo bewijs je dat de synthese het ontwerp niet veranderd heeft.

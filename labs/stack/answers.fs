@@ -1,4 +1,3 @@
-\ FILE: stack/answers.fs
 \ Uitwerkingen van de oefeningen: nuttige stapelwoorden.
 : nip    SWAP DROP ;
 : 2dup   OVER OVER ;

@@ -1,4 +1,3 @@
-// FILE: cpu/idecode.v
 // Haalt de velden uit een 16-bit instructie.
 module idecode(
   input  [15:0] ir,

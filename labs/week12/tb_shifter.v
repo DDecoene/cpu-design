@@ -1,4 +1,3 @@
-// FILE: week12/tb_shifter.v
 module tb_shifter;
   reg  [7:0] a;
   reg  [2:0] sh;

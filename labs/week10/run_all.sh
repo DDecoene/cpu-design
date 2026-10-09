@@ -1,4 +1,3 @@
-# FILE: week10/run_all.sh
 #!/bin/bash
 # Gebruik: bash run_all.sh   (in een map met je .v-bestanden)
 fail=0

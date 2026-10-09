@@ -1,4 +1,3 @@
-// FILE: beeld_fpga/ice40_top.v
 // Het toplevel voor een iCE40 UP5K-bord met een klok van 12 MHz (bijvoorbeeld de iCEBreaker), een VGA-module met 4 bit per kleur
 // en een microSD-module. De CPU draait op de 12 MHz van het bord, het beeld op de 25,125 MHz van de PLL.
 module ice40_top(

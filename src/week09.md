@@ -79,54 +79,10 @@ Bij `<=` worden eerst alle rechterkanten gelezen en daarna alle linkerkanten teg
 
 Probeer het zelf:
 
-```verilog
-// FILE: week09/blocking.v
-// Drie keer hetzelfde idee: een 3-staps vertraging voor een bit.
-module pipe_nb(input clk, input d, output reg q1, q2, q3);
-  always @(posedge clk) begin
-    q1 <= d;      // alle drie lezen de OUDE waarden
-    q2 <= q1;
-    q3 <= q2;
-  end
-endmodule
-
-// FOUT: met blokkerende toekenningen valt het hele ding in elkaar.
-module pipe_bad(input clk, input d, output reg q1, q2, q3);
-  always @(posedge clk) begin
-    q1 = d;       // q1 is meteen d
-    q2 = q1;      // dus q2 ook, meteen
-    q3 = q2;      // en q3 ook: er is geen vertraging meer
-  end
-endmodule
+```{.verilog include="week09/blocking.v"}
 ```
 
-```verilog
-// FILE: week09/tb_blocking.v
-module tb_blocking;
-  reg clk = 0, d = 0;
-  wire a1, a2, a3, b1, b2, b3;
-  integer fouten = 0;
-  pipe_nb  good(clk, d, a1, a2, a3);
-  pipe_bad bad (clk, d, b1, b2, b3);
-  always #5 clk = ~clk;
-
-  initial begin
-    // Beginwaarden: alles op 0 laten lopen.
-    repeat (4) @(posedge clk);
-    @(negedge clk); d = 1;
-    @(posedge clk); #1;
-    // Na ÉÉN klokflank moet de goede versie nog maar q1 = 1 hebben.
-    if ({a1, a2, a3} !== 3'b100) begin fouten = fouten + 1; $display("FAIL: nb na 1 flank = %b%b%b", a1, a2, a3); end
-    // De foute versie heeft meteen alle drie op 1.
-    if ({b1, b2, b3} !== 3'b111) begin fouten = fouten + 1; $display("FAIL: bad na 1 flank = %b%b%b", b1, b2, b3); end
-    @(posedge clk); #1;
-    if ({a1, a2, a3} !== 3'b110) begin fouten = fouten + 1; $display("FAIL: nb na 2 flanken"); end
-    @(posedge clk); #1;
-    if ({a1, a2, a3} !== 3'b111) begin fouten = fouten + 1; $display("FAIL: nb na 3 flanken"); end
-    if (fouten == 0) $display("PASS: <= geeft drie vertraagde bits; = laat ze in één keer doorschieten");
-    $finish;
-  end
-endmodule
+```{.verilog include="week09/tb_blocking.v"}
 ```
 
 > **Drie regels om te onthouden.**
@@ -161,70 +117,21 @@ module teller #(parameter W = 8) (...);   // W kan bij het gebruik worden gewijz
 
 Een `for`-lus in een `generate`-blok maakt meerdere exemplaren van hardware. Het is geen herhaling zoals in software. Zo bouw je een N-bit opteller uit N volledige optellers:
 
-```verilog
-// FILE: week09/addn.v
-module fa(input a, input b, input cin, output s, output cout);
-  assign s    = a ^ b ^ cin;
-  assign cout = (a & b) | (cin & (a ^ b));
-endmodule
-
-module addn #(parameter N = 8) (
-  input  [N-1:0] a,
-  input  [N-1:0] b,
-  input          cin,
-  output [N-1:0] s,
-  output         cout
-);
-  wire [N:0] c;
-  assign c[0] = cin;
-  assign cout = c[N];
-
-  genvar i;
-  generate
-    for (i = 0; i < N; i = i + 1) begin : gen_bit
-      fa f(a[i], b[i], c[i], s[i], c[i+1]);
-    end
-  endgenerate
-endmodule
+```{.verilog include="week09/addn.v"}
 ```
 
 ### `function`
 
 Een functie berekent combinatorisch een waarde:
 
-```verilog
-// FILE: week09/funcs.v
-module parity_demo(input [7:0] x, output y_even, output y_odd);
-  function automatic parity(input [7:0] v);
-    parity = ^v;                         // 1 als het aantal enen oneven is
-  endfunction
-  assign y_odd  = parity(x);
-  assign y_even = ~parity(x);
-endmodule
+```{.verilog include="week09/funcs.v"}
 ```
 
 ### `case`, `casez` en voorrang
 
 `casez` behandelt `?` als "maakt niet uit". Daarmee schrijf je een prioriteitsschakeling: de eerste regel die past wint.
 
-```verilog
-// FILE: week09/prio.v
-// Prioriteitsencoder: het nummer van de hoogste ingang die 1 is.
-module prio_enc8(input [7:0] in, output reg [2:0] y, output valid);
-  assign valid = |in;
-  always @* begin
-    casez (in)
-      8'b1???_????: y = 3'd7;
-      8'b01??_????: y = 3'd6;
-      8'b001?_????: y = 3'd5;
-      8'b0001_????: y = 3'd4;
-      8'b0000_1???: y = 3'd3;
-      8'b0000_01??: y = 3'd2;
-      8'b0000_001?: y = 3'd1;
-      default:      y = 3'd0;
-    endcase
-  end
-endmodule
+```{.verilog include="week09/prio.v"}
 ```
 
 ## 5. SystemVerilog: de verbeterde variant
@@ -239,16 +146,7 @@ SystemVerilog is de moderne opvolger van Verilog (2005 en later). Alles uit Veri
 
 Alle voorbeelden in de rest van de cursus werken met `iverilog -g2012`, dus je mag beide stijlen door elkaar gebruiken. Voor nieuw werk is de SystemVerilog-stijl aan te raden:
 
-```verilog
-// FILE: week09/sv_style.v
-module counter_sv #(parameter W = 8) (
-  input  logic         clk, rst_n, en,
-  output logic [W-1:0] q
-);
-  always_ff @(posedge clk or negedge rst_n)
-    if (!rst_n)  q <= '0;
-    else if (en) q <= q + 1'b1;
-endmodule
+```{.verilog include="week09/sv_style.v"}
 ```
 
 ## 6. Veelgemaakte fouten
@@ -268,73 +166,10 @@ Over dat laatste punt: zet in elk bestand bovenaan `` `default_nettype none `` e
 
 ## 7. Lab: een testbench voor de bouwstenen
 
-```verilog
-// FILE: week09/tb_bouwstenen.v
-module tb_bouwstenen;
-  reg  [7:0] a, b;
-  reg        cin;
-  wire [7:0] s;
-  wire       cout;
-  reg  [7:0] p_in;
-  wire [2:0] p_y;
-  wire       p_valid;
-  wire       y_even, y_odd;
-  integer i, j, k, fouten = 0;
-  reg [8:0] verwacht;
-  reg [2:0] ref_y;
-
-  addn #(8) adder(a, b, cin, s, cout);
-  prio_enc8 enc(p_in, p_y, p_valid);
-  parity_demo par(a, y_even, y_odd);
-
-  initial begin
-    // 8-bit opteller: 2000 willekeurige gevallen plus de hoeken.
-    for (i = 0; i < 2000; i = i + 1) begin
-      a = $random; b = $random; cin = $random; #1;
-      verwacht = a + b + cin;
-      if ({cout, s} !== verwacht) begin fouten = fouten + 1; $display("FAIL add: %0d+%0d+%0d", a, b, cin); end
-    end
-    a = 8'hFF; b = 8'h01; cin = 0; #1;
-    if ({cout, s} !== 9'h100) begin fouten = fouten + 1; $display("FAIL add: 255+1"); end
-
-    // Prioriteitsencoder: alle 256 invoeren tegen een referentie.
-    for (j = 0; j < 256; j = j + 1) begin
-      p_in = j[7:0]; #1;
-      ref_y = 0;
-      for (k = 0; k < 8; k = k + 1) if (p_in[k]) ref_y = k[2:0];
-      if (p_y !== ref_y || p_valid !== (j != 0)) begin
-        fouten = fouten + 1; $display("FAIL prio bij %b: y=%0d valid=%b", p_in, p_y, p_valid);
-      end
-    end
-
-    // Pariteit
-    a = 8'b0000_0111; #1; if (y_odd !== 1'b1) begin fouten = fouten + 1; $display("FAIL pariteit 7"); end
-    a = 8'b0000_0011; #1; if (y_odd !== 1'b0) begin fouten = fouten + 1; $display("FAIL pariteit 3"); end
-
-    if (fouten == 0) $display("PASS: addn, prio_enc8 en parity_demo kloppen");
-    $finish;
-  end
-endmodule
+```{.verilog include="week09/tb_bouwstenen.v"}
 ```
 
-```verilog
-// FILE: week09/tb_sv.v
-module tb_sv;
-  logic clk = 0, rst_n = 0, en = 0;
-  logic [7:0] q;
-  int fouten = 0;
-  counter_sv #(8) dut(.*);
-  always #5 clk = ~clk;
-  initial begin
-    #12 rst_n = 1; en = 1;
-    repeat (300) @(posedge clk);
-    #1;
-    // 300 klokflanken geteld met een 8-bit teller: 300 mod 256 = 44.
-    if (q !== 8'd44) begin fouten++; $display("FAIL: q = %0d", q); end
-    if (fouten == 0) $display("PASS: SystemVerilog-teller (always_ff, logic) werkt");
-    $finish;
-  end
-endmodule
+```{.verilog include="week09/tb_sv.v"}
 ```
 
 Draai alles:

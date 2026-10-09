@@ -1,4 +1,3 @@
-; FILE: cpu/mul.asm
 ; 16-bit product van 200 x 150 met shift-and-add. Resultaat in R5:R4 (0x7530 = 30000).
         LDI  R1, 200        ; vermenigvuldigtal, laag
         LDI  R2, 0          ; vermenigvuldigtal, hoog

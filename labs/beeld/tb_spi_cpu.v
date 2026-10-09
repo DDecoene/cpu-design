@@ -1,4 +1,3 @@
-// FILE: beeld/tb_spi_cpu.v
 // De CPU stuurt de SPI-poort aan (MISO verbonden met MOSI) en meldt via de GPIO hoeveel bytes goed terugkwamen.
 module tb_spi_cpu;
   reg clk = 0, rst_n = 0;

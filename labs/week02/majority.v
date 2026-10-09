@@ -1,4 +1,3 @@
-// FILE: week02/majority.v
 module majority(input a, input b, input c, output y);
   wire t1, t2, t3, t12;
   nand2 g1(a, b, t1);

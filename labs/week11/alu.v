@@ -1,4 +1,3 @@
-// FILE: week11/alu.v
 // 8-bit (parametrisch) ALU met vlaggen Z, N, C, V.
 module alu #(parameter W = 8) (
   input      [W-1:0] a,

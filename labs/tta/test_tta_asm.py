@@ -1,4 +1,3 @@
-# FILE: tta/test_tta_asm.py
 # Tests voor de TTA-assembler.
 from tta_asm import assemble, AsmError
 

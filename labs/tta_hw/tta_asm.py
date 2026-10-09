@@ -1,4 +1,3 @@
-# FILE: tta/tta_asm.py
 """Assembler voor de transport-triggered architecture T8.
 
 Gebruik:  python3 tta_asm.py programma.tta [--list]     -> programma.hex (en programma.dat)

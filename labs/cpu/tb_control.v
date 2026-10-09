@@ -1,4 +1,3 @@
-// FILE: cpu/tb_control.v
 module tb_control;
   reg clk = 0, rst_n = 1;          // begint hoog; elke test geeft zelf een resetpuls (dalende flank)
   reg [3:0] op = 0;

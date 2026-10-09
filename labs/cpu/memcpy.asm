@@ -1,4 +1,3 @@
-; FILE: cpu/memcpy.asm
 ; Kopieert 8 bytes van adres 16 naar adres 48.
         .data 16, 11, 22, 33, 44, 55, 66, 77, 88
         LDI  R1, 16         ; bron

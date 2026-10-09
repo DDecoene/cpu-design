@@ -48,29 +48,7 @@ De formule is y = s'·a + s·b. Voor vier ingangen heb je twee selectbits nodig,
 
 In een CPU zitten overal muxen. Gaat er een register of een constante de ALU in? Schrijf je het ALU-resultaat of data uit het geheugen terug in een register? Elk van die keuzes is een mux, en een CPU heeft er tientallen.
 
-```verilog
-// FILE: week04/mux.v
-// Een 2:1 mux met instelbare breedte (W bits).
-module mux2 #(parameter W = 1) (
-  input  [W-1:0] a,
-  input  [W-1:0] b,
-  input          s,
-  output [W-1:0] y
-);
-  assign y = s ? b : a;
-endmodule
-
-// 4:1 mux gebouwd uit drie 2:1 mux'en.
-module mux4 #(parameter W = 1) (
-  input  [W-1:0] d0, d1, d2, d3,
-  input  [1:0]   s,
-  output [W-1:0] y
-);
-  wire [W-1:0] lo, hi;
-  mux2 #(W) m0(d0, d1, s[0], lo);
-  mux2 #(W) m1(d2, d3, s[0], hi);
-  mux2 #(W) m2(lo, hi, s[1], y);
-endmodule
+```{.verilog include="week04/mux.v"}
 ```
 
 Met `#(parameter W = 1)` is de module herbruikbaar: `mux2 #(8)` is een 8-bit mux en `mux2 #(16)` een 16-bit mux. Je schrijft de module één keer en gebruikt hem overal.
@@ -87,15 +65,7 @@ Een 3→8 decoder heeft 3 ingangen en 8 uitgangen. Met een enable (`en`) zet je 
 
 Een CPU gebruikt dit om één register uit acht te kiezen waarin geschreven wordt, of om een geheugenchip te kiezen op basis van het adres. De decoder maakt van "nummer 5" een draad die aan gaat.
 
-```verilog
-// FILE: week04/decoder.v
-module decoder3to8(
-  input  [2:0] a,
-  input        en,
-  output [7:0] y
-);
-  assign y = en ? (8'b0000_0001 << a) : 8'b0;
-endmodule
+```{.verilog include="week04/decoder.v"}
 ```
 
 De chip hiervoor is de 74HC138. Bij die chip zijn de uitgangen actief laag: de gekozen uitgang is 0 en de rest 1. Dat zie je vaak in 74-chips. In het datablad herken je zulke signalen aan een streep boven de naam of aan een `n` of `#` erachter.
@@ -135,34 +105,7 @@ Cout = A·B + Cin·(A ⊕ B)
 
 Je bouwt hem uit twee halve optellers en een OR-poort.
 
-```verilog
-// FILE: week04/adder.v
-module half_adder(input a, input b, output s, output c);
-  assign s = a ^ b;
-  assign c = a & b;
-endmodule
-
-module full_adder(input a, input b, input cin, output s, output cout);
-  wire s1, c1, c2;
-  half_adder h1(a, b, s1, c1);
-  half_adder h2(s1, cin, s, c2);
-  assign cout = c1 | c2;
-endmodule
-
-// 4-bit ripple-carry opteller: vier full adders, de carry "rimpelt" van rechts naar links.
-module adder4(
-  input  [3:0] a,
-  input  [3:0] b,
-  input        cin,
-  output [3:0] s,
-  output       cout
-);
-  wire c1, c2, c3;
-  full_adder f0(a[0], b[0], cin, s[0], c1);
-  full_adder f1(a[1], b[1], c1,  s[1], c2);
-  full_adder f2(a[2], b[2], c2,  s[2], c3);
-  full_adder f3(a[3], b[3], c3,  s[3], cout);
-endmodule
+```{.verilog include="week04/adder.v"}
 ```
 
 ### Waarom ripple-carry traag is
@@ -187,95 +130,17 @@ Een zevensegmentdisplay heeft zeven LED-streepjes (a tot en met g). Een decoder 
    ─d─
 ```
 
-```verilog
-// FILE: week04/seg7.v
-// Uitgang: {a,b,c,d,e,f,g}, 1 = segment aan.
-module seg7(input [3:0] d, output reg [6:0] seg);
-  always @* begin
-    case (d)
-      4'd0: seg = 7'b1111110;
-      4'd1: seg = 7'b0110000;
-      4'd2: seg = 7'b1101101;
-      4'd3: seg = 7'b1111001;
-      4'd4: seg = 7'b0110011;
-      4'd5: seg = 7'b1011011;
-      4'd6: seg = 7'b1011111;
-      4'd7: seg = 7'b1110000;
-      4'd8: seg = 7'b1111111;
-      4'd9: seg = 7'b1111011;
-      default: seg = 7'b0000000;   // 10..15: don't care, we laten alles uit
-    endcase
-  end
-endmodule
+```{.verilog include="week04/seg7.v"}
 ```
 
 `always @*` betekent: dit is combinatorische logica, herbereken het bij elke verandering van een ingang. Een `case` is een tabel, dus een waarheidstabel in code. In week 9 gaan we dieper op deze constructies in.
 
 ## 7. Tests
 
-```verilog
-// FILE: week04/tb_adder4.v
-module tb_adder4;
-  reg  [3:0] a, b;
-  reg        cin;
-  wire [3:0] s;
-  wire       cout;
-  integer i, fouten = 0;
-  adder4 dut(a, b, cin, s, cout);
-
-  initial begin
-    for (i = 0; i < 512; i = i + 1) begin
-      {cin, a, b} = i[8:0];
-      #1;
-      if ({cout, s} !== a + b + cin) begin
-        fouten = fouten + 1;
-        $display("FAIL: %0d + %0d + %0d gaf %0d", a, b, cin, {cout, s});
-      end
-    end
-    if (fouten == 0) $display("PASS: adder4 klopt voor alle 512 invoeren");
-  end
-endmodule
+```{.verilog include="week04/tb_adder4.v"}
 ```
 
-```verilog
-// FILE: week04/tb_mux_dec_seg.v
-module tb_mux_dec_seg;
-  reg  [7:0] d0, d1, d2, d3;
-  reg  [1:0] s;
-  wire [7:0] y;
-  reg  [2:0] a;
-  reg        en;
-  wire [7:0] dec;
-  reg  [3:0] digit;
-  wire [6:0] seg;
-  integer i, fouten = 0;
-
-  mux4 #(8) m(d0, d1, d2, d3, s, y);
-  decoder3to8 dc(a, en, dec);
-  seg7 sg(digit, seg);
-
-  initial begin
-    d0 = 8'h11; d1 = 8'h22; d2 = 8'h33; d3 = 8'h44;
-    for (i = 0; i < 4; i = i + 1) begin
-      s = i[1:0]; #1;
-      if (y !== (8'h11 * (i + 1))) begin fouten = fouten + 1; $display("FAIL mux s=%0d y=%h", i, y); end
-    end
-
-    en = 1;
-    for (i = 0; i < 8; i = i + 1) begin
-      a = i[2:0]; #1;
-      if (dec !== (8'b1 << i)) begin fouten = fouten + 1; $display("FAIL dec a=%0d dec=%b", i, dec); end
-    end
-    en = 0; a = 3'd5; #1;
-    if (dec !== 8'b0) begin fouten = fouten + 1; $display("FAIL dec enable"); end
-
-    digit = 4'd8; #1; if (seg !== 7'b1111111) begin fouten = fouten + 1; $display("FAIL seg 8"); end
-    digit = 4'd1; #1; if (seg !== 7'b0110000) begin fouten = fouten + 1; $display("FAIL seg 1"); end
-    digit = 4'd15; #1; if (seg !== 7'b0) begin fouten = fouten + 1; $display("FAIL seg 15"); end
-
-    if (fouten == 0) $display("PASS: mux, decoder en zevensegment kloppen");
-  end
-endmodule
+```{.verilog include="week04/tb_mux_dec_seg.v"}
 ```
 
 Draai alles:

@@ -1,4 +1,3 @@
-// FILE: beeld/tb_beeld_v.v
 `timescale 1ns/1ps
 // De hele keten: de CPU voert kleurbalken.asm uit, schrijft de balken in het framebuffer, en we kijken met de virtuele monitor wat er op het scherm staat.
 module tb_beeld_v;

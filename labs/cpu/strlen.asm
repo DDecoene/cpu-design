@@ -1,4 +1,3 @@
-; FILE: cpu/strlen.asm
 ; Lengte van een tekst met 0 als einde. De tekst "HELLO" staat op adres 32.
         .data 32, 72, 69, 76, 76, 79, 0
         LDI  R1, 32         ; wijzer

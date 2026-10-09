@@ -1,4 +1,3 @@
-// FILE: cpu_irq/tb_fpga_top.v
 // Test van het toplevel met een kleine "klok" zodat de simulatie snel is: 16 klokcycli per UART-bit.
 module tb_fpga_top_f;
   localparam CLK_HZ = 16000, BAUD = 1000, DIV = 16;

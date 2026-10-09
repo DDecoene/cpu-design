@@ -1,4 +1,3 @@
-# FILE: beeld/test_mkbeeld.py
 #!/usr/bin/env python3
 """Test van mkbeeld.py: dezelfde palette als de hardware, de omzetting heen en terug, de demo en de PPM-invoer.
 Maakt als bijproduct sd.img en sd.hex, die de testbench van de complete computer inlaadt."""

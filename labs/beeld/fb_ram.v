@@ -1,4 +1,3 @@
-// FILE: beeld/fb_ram.v
 // Het framebuffer: 9600 bytes, twee pixels per byte, met twee klokken.
 // Schrijven gebeurt in het klokdomein van de CPU, lezen in dat van de pixelklok. Zo'n RAM met twee poorten
 // heeft een FPGA ingebouwd: een iCE40 koppelt er elk blok-RAM met een eigen schrijf- en leesklok aan.

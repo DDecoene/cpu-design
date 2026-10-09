@@ -1,4 +1,3 @@
-// FILE: tt_t8/rom_t8.v
 // Gegenereerd door mkrom.py. Niet met de hand aanpassen.
 module t8_rom (input [7:0] a, output reg [23:0] d);
   always_comb begin

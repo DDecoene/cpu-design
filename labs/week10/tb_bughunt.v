@@ -1,4 +1,3 @@
-// FILE: week10/tb_bughunt.v
 module tb_bughunt;
   reg  [7:0] a, b;
   wire [7:0] y_ok, y_bug;

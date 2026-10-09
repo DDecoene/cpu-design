@@ -1,4 +1,3 @@
-// FILE: week04/mux.v
 // Een 2:1 mux met instelbare breedte (W bits).
 module mux2 #(parameter W = 1) (
   input  [W-1:0] a,

@@ -1,4 +1,3 @@
-// FILE: cpu/tb_datapath.v
 `include "asm_funcs.vh"
 // We spelen zelf "besturingseenheid": we zetten de besturingssignalen per klokcyclus.
 module tb_datapath;

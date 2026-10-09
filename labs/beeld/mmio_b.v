@@ -1,4 +1,3 @@
-// FILE: beeld/mmio_b.v
 // De geheugenkaart met video en SPI: mmio_v met de SPI-poort op 0xFC tot 0xFF erbij.
 module mmio_b #(parameter DIV = 16, parameter TDIV = 1, parameter DATA = "data.hex", parameter DLOAD = 0) (
   input        clk,

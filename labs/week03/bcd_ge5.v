@@ -1,4 +1,3 @@
-// FILE: week03/bcd_ge5.v
 // Is het BCD-cijfer (ABCD, alleen 0..9 komt voor) groter of gelijk aan 5?
 module bcd_ge5(input a, input b, input c, input d, output y);
   assign y = a | (b & d) | (b & c);

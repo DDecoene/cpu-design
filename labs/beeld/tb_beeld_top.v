@@ -1,4 +1,3 @@
-// FILE: beeld/tb_beeld_top.v
 `timescale 1ns/1ps
 // De hele beeldcomputer: een SD-kaartmodel met het demobeeld, het bootprogramma op de CPU, en de virtuele monitor.
 // Gecontroleerd wordt het gedrag naar de kaart toe (volgorde, klokpulsen, snelheid, blokken) en het beeld dat op het scherm komt.

@@ -1,4 +1,3 @@
-// FILE: week08/memory.v
 // Synchroon schrijven, asynchroon (combinatorisch) lezen. Net zoals een eenvoudig SRAM.
 module ram #(parameter AW = 8, parameter DW = 8) (
   input               clk,

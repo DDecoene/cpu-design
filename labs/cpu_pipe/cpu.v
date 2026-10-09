@@ -1,4 +1,3 @@
-// FILE: cpu/cpu.v
 // De complete CPU: datapath + besturing + geheugens.
 module cpu #(
   parameter PROG = "prog.hex", parameter LOAD = 1,

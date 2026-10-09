@@ -189,88 +189,20 @@ Het resultaat is f = A + BD + BC. Zonder don't cares had je veel meer termen nod
 
 Een goede ontwerper vertrouwt zijn eigen rekenwerk niet blind. We schrijven de functie uit het voorbeeld twee keer: één keer als som van alle minterms en één keer vereenvoudigd. De testbench vergelijkt ze voor alle 16 invoeren.
 
-```verilog
-// FILE: week03/fn_sop.v
-// f = Σm(0,1,2,5,8,9,10) rechtstreeks uit de tabel.
-module fn_sop(input a, input b, input c, input d, output y);
-  assign y = (~a & ~b & ~c & ~d)   // m0
-           | (~a & ~b & ~c &  d)   // m1
-           | (~a & ~b &  c & ~d)   // m2
-           | (~a &  b & ~c &  d)   // m5
-           | ( a & ~b & ~c & ~d)   // m8
-           | ( a & ~b & ~c &  d)   // m9
-           | ( a & ~b &  c & ~d);  // m10
-endmodule
-
-// Vereenvoudigd met de K-map: f = B'D' + B'C' + A'C'D
-module fn_min(input a, input b, input c, input d, output y);
-  assign y = (~b & ~d) | (~b & ~c) | (~a & ~c & d);
-endmodule
+```{.verilog include="week03/fn_sop.v"}
 ```
 
-```verilog
-// FILE: week03/tb_fn.v
-module tb_fn;
-  reg a, b, c, d;
-  wire y1, y2;
-  integer i, fouten = 0;
-  fn_sop s(a, b, c, d, y1);
-  fn_min m(a, b, c, d, y2);
-
-  initial begin
-    for (i = 0; i < 16; i = i + 1) begin
-      {a, b, c, d} = i[3:0];
-      #1;
-      if (y1 !== y2) begin
-        fouten = fouten + 1;
-        $display("FAIL: invoer %b%b%b%b geeft sop=%b min=%b", a, b, c, d, y1, y2);
-      end
-    end
-    if (fouten == 0) $display("PASS: vereenvoudigde functie is gelijk aan de sop voor alle 16 invoeren");
-  end
-endmodule
+```{.verilog include="week03/tb_fn.v"}
 ```
 
 Dit heet exhaustieve verificatie. Bij 4 ingangen controleer je 16 gevallen, bij 16 ingangen 65 536 (nog steeds snel) en bij 64 ingangen gaat het niet meer. Dan heb je slimmere methoden nodig, maar het idee blijft hetzelfde.
 
 ### De BCD-schakeling met don't cares, en De Morgan
 
-```verilog
-// FILE: week03/bcd_ge5.v
-// Is het BCD-cijfer (ABCD, alleen 0..9 komt voor) groter of gelijk aan 5?
-module bcd_ge5(input a, input b, input c, input d, output y);
-  assign y = a | (b & d) | (b & c);
-endmodule
-
-// Dezelfde functie, maar uitsluitend NAND-poorten (via De Morgan):
-//   A + BD + BC = ((A')·(BD)'·(BC)')'
-module bcd_ge5_nand(input a, input b, input c, input d, output y);
-  wire na = ~a;
-  wire t1 = ~(b & d);
-  wire t2 = ~(b & c);
-  assign y = ~(na & t1 & t2);
-endmodule
+```{.verilog include="week03/bcd_ge5.v"}
 ```
 
-```verilog
-// FILE: week03/tb_bcd.v
-module tb_bcd;
-  reg a, b, c, d;
-  wire y1, y2;
-  integer i, fouten = 0;
-  bcd_ge5 u1(a, b, c, d, y1);
-  bcd_ge5_nand u2(a, b, c, d, y2);
-
-  initial begin
-    for (i = 0; i < 10; i = i + 1) begin   // alleen 0..9: de rest zijn don't cares
-      {a, b, c, d} = i[3:0];
-      #1;
-      if (y1 !== (i >= 5)) begin fouten = fouten + 1; $display("FAIL ge5 bij %0d", i); end
-      if (y2 !== y1)       begin fouten = fouten + 1; $display("FAIL nand bij %0d", i); end
-    end
-    if (fouten == 0) $display("PASS: BCD >= 5 klopt voor 0..9, ook de NAND-versie");
-  end
-endmodule
+```{.verilog include="week03/tb_bcd.v"}
 ```
 
 Draai de labs:

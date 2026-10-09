@@ -1,4 +1,3 @@
-// FILE: week10/fifo.v
 module fifo #(parameter DW = 8, parameter AW = 3) (
   input               clk,
   input               rst_n,

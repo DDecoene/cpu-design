@@ -1,4 +1,3 @@
-// FILE: week05/latches.v
 // SR-latch uit twee NOR-poorten.
 module sr_latch(input s, input r, output q, output qn);
   nor g1(q,  r, qn);

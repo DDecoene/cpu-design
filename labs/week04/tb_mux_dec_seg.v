@@ -1,4 +1,3 @@
-// FILE: week04/tb_mux_dec_seg.v
 module tb_mux_dec_seg;
   reg  [7:0] d0, d1, d2, d3;
   reg  [1:0] s;

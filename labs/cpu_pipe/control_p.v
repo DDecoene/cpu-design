@@ -1,4 +1,3 @@
-// FILE: cpu_pipe/control_p.v
 // Besturing voor de gepijplijnde W8: geen stappen meer. In elke cyclus wordt tegelijk
 // de volgende instructie opgehaald (pc_inc, ir_we) en de huidige uitgevoerd.
 module control_p(

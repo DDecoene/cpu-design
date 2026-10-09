@@ -1,4 +1,3 @@
-// FILE: stack/tb_s8_run.v
 // Draait een met forth.py gemaakt programma en toont de stapel. Gebruik via runfs.sh.
 module tb_s8_run;
   reg clk = 0, rst_n = 0;

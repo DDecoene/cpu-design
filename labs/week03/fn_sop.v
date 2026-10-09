@@ -1,4 +1,3 @@
-// FILE: week03/fn_sop.v
 // f = Σm(0,1,2,5,8,9,10) rechtstreeks uit de tabel.
 module fn_sop(input a, input b, input c, input d, output y);
   assign y = (~a & ~b & ~c & ~d)   // m0

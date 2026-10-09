@@ -1,4 +1,3 @@
-# FILE: tt_t8/core_size.py
 """Schat de grootte van de programmeerbare T8-kern (zonder programma): de instructie is een ingang van de chip,
 dus de synthese kan niets wegwerken op grond van een vast programma. Hetzelfde idee als chip_size.sh, andere vraag."""
 import os, subprocess, sys

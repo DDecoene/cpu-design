@@ -1,4 +1,3 @@
-// FILE: tta/tb_tta_run.v
 // Draait een geassembleerd TTA-programma en toont uitvoer en eindtoestand. Gebruik via run_tta.sh.
 module tb_tta_run;
   reg clk = 0, rst_n = 0;

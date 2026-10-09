@@ -1,4 +1,3 @@
-// FILE: week10/tb_wave.v
 module cnt4(input clk, input rst_n, output reg [3:0] q);
   always @(posedge clk or negedge rst_n)
     if (!rst_n) q <= 0; else q <= q + 1'b1;

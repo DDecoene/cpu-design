@@ -1,0 +1,23 @@
+%YAML 1.2
+---
+# Kleuring voor het Forth van week 18.
+name: Forth
+file_extensions: [fs]
+scope: source.forth
+contexts:
+  main:
+    - match: '(^|\s)\\\s.*$'
+      scope: comment.line.backslash.forth
+    - match: '(^|\s)\(\s[^)]*\)'
+      scope: comment.block.forth
+    - match: '(^|\s)(:)\s+(\S+)'
+      captures:
+        2: keyword.control.forth
+        3: entity.name.function.forth
+    - match: '(^|\s)(;)(?=\s|$)'
+      captures:
+        2: keyword.control.forth
+    - match: '(?i)(?<=\s|^)(IF|ELSE|THEN|BEGIN|UNTIL|WHILE|REPEAT|DO|LOOP|VARIABLE|CONSTANT)(?=\s|$)'
+      scope: keyword.control.forth
+    - match: '(?<=\s|^)-?[0-9]+(?=\s|$)'
+      scope: constant.numeric.forth

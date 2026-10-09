@@ -1,4 +1,3 @@
-// FILE: week10/tb_fifo.v
 module tb_fifo;
   reg clk = 0, rst_n = 0, push = 0, pop = 0;
   reg  [7:0] din = 0;

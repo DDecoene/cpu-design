@@ -1,4 +1,3 @@
-# FILE: stack/runfs.sh
 #!/bin/bash
 # Gebruik: bash runfs.sh programma.fs
 # Compileert een Forth-programma en draait het op de stackmachine S8.

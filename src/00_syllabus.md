@@ -21,7 +21,7 @@ Daarna volgt een vervolgproject van vier weken (fase 7, week 27 tot 30): een kle
 ## Hoe de cursus werkt
 
 - De cursus duurt 26 weken (fase 7 voegt er nog vier toe), met ongeveer 10 tot 12 uur per week (ruim 300 uur in totaal). Heb je minder tijd, rek het dan uit tot negen maanden. Dat is geen schande.
-- Elke week is één PDF met doelen, theorie, uitgewerkte voorbeelden, een lab, oefeningen, antwoorden en een zelftest.
+- Elke week is een hoofdstuk met doelen, theorie, uitgewerkte voorbeelden, een lab, oefeningen en een zelftest. De antwoorden staan achteraan in het boek, de lange listings in het codeboek.
 - Elk lab bevat werkende Verilog-code die met Icarus Verilog is getest. De bestanden staan ook in de map `labs/weekNN/`.
 - De cursus leert door te bouwen. Lees de theorie en bouw dan meteen het lab. Snap je iets niet, bouw het dan eerst en lees daarna opnieuw.
 - Typ de code over in plaats van te kopiëren. Je vingers leren sneller dan je ogen.
@@ -123,8 +123,9 @@ Prijzen zijn schattingen en kunnen verschillen. Controleer actuele prijzen en de
 
 ```
 cpu-design-cursus/
-├── pdf/              ← de PDF's: syllabus, 30 weken en de bijlagen
-├── src/              ← de bronbestanden (Markdown)
+├── pdf/              ← het boek (scherm en print) en het codeboek
+├── src/              ← de tekst van elk hoofdstuk (Markdown)
+├── boek/             ← de opmaak van het boek
 ├── labs/             ← de werkende code, per week of per project
 │   ├── week01 ... week12     (fase 1 t/m 3)
 │   ├── cpu/                  (weken 13-17: W8, assembler)
@@ -135,11 +136,11 @@ cpu-design-cursus/
 │   ├── beeld, beeld_fpga     (weken 27-30: beeldcomputer, SD-kaart)
 │   ├── tta_hw                (week 25: 74HC-bord)
 │   └── tt_t8                 (week 26: chip)
-├── extract_labs.py   ← haalt alle code uit de PDF-bronnen en test alles
-└── build.sh          ← bouwt de PDF's opnieuw
+├── test_labs.py      ← draait alle tests
+└── build.py          ← bouwt het boek opnieuw
 ```
 
-Elke PDF bevat de volledige code. `extract_labs.py` haalt die eruit en draait alle 74 tests.
+Alle code uit het boek staat in `labs/`. Een listing in het boek is een kopie van zo'n bestand, en `test_labs.py` draait alle 74 tests.
 
 ## Leeradvies
 

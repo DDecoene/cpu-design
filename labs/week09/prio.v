@@ -1,4 +1,3 @@
-// FILE: week09/prio.v
 // Prioriteitsencoder: het nummer van de hoogste ingang die 1 is.
 module prio_enc8(input [7:0] in, output reg [2:0] y, output valid);
   assign valid = |in;

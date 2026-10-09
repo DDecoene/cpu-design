@@ -1,4 +1,3 @@
-// FILE: cpu_fpga/mmio_f.v
 // Het datageheugen met apparaten (memory-mapped I/O).
 //   0x00..0xEF  RAM
 //   0xF0  UART data      schrijven: verzenden; lezen: ontvangen byte (wist 'ontvangen')

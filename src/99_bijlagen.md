@@ -154,7 +154,7 @@ Controleer altijd de pinout en de timing in het datablad van de fabrikant die je
 | Doel | Commando |
 |------|----------|
 | Verilog simuleren | `iverilog -g2012 -o x.vvp tb.v ontwerp.v && vvp x.vvp` |
-| Alle labs controleren | `python3 extract_labs.py` (in de cursusmap) |
+| Alle labs controleren | `python3 test_labs.py` (in de cursusmap) |
 | W8-programma | `python3 asm.py p.asm` en `bash run.sh p.asm` |
 | Forth voor S8 | `python3 forth.py p.fs` en `bash runfs.sh p.fs` |
 | T8-programma | `python3 tta_asm.py p.tta` en `bash run_tta.sh p.tta` |
@@ -162,7 +162,7 @@ Controleer altijd de pinout en de timing in het datablad van de fabrikant die je
 | Gate-level simulatie | `bash gatesim.sh` |
 | Onderdelenlijst | `python3 bom.py` |
 | Chipgrootte | `python3 core_size.py`, `bash chip_size.sh` |
-| PDF's opnieuw bouwen | `./build.sh` |
+| Het boek opnieuw bouwen | `./build.py` |
 
 # Bijlage F: woordenlijst
 

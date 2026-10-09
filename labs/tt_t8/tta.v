@@ -1,4 +1,3 @@
-// FILE: tta/tta.v
 // T8: een transport-triggered architecture. De enige instructie is MOVE: bron -> bestemming.
 // Een instructie van 24 bit:  [23:21] guard | [20:16] bestemming | [15:8] bron | [7:0] constante
 // Rekenen gebeurt als bijwerking van schrijven naar een "trigger"-bestemming.

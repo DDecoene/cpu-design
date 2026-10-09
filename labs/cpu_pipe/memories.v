@@ -1,4 +1,3 @@
-// FILE: cpu/memories.v
 // Instructiegeheugen: 256 woorden van 16 bit, asynchroon lezen, gevuld uit een hex-bestand.
 module imem #(parameter FILE = "prog.hex", parameter LOAD = 1) (
   input  [7:0]  addr,

@@ -1,4 +1,3 @@
-# FILE: beeld/test_ppm2png.py
 #!/usr/bin/env python3
 """Test van ppm2png.py: een klein PPM-bestand omzetten en de PNG weer uitpakken."""
 import os, struct, subprocess, sys, tempfile, zlib

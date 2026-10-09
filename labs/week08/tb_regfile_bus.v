@@ -1,4 +1,3 @@
-// FILE: week08/tb_regfile_bus.v
 module tb_regfile_bus;
   reg clk = 0, we = 0;
   reg  [2:0] wa = 0, ra1 = 0, ra2 = 0;

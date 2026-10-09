@@ -1,4 +1,3 @@
-// FILE: tt_t8/tb_tt_t8.v
 // De chip: het Fibonacci-programma draait en de uitgangspennen tonen de rij.
 module tb_tt_t8;
   reg clk = 0, rst_n = 0;

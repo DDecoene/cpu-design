@@ -174,30 +174,10 @@ Vraag voor je logboek: wat gebeurt er als je de LED zonder weerstand aansluit? P
 
 We schrijven nu alvast een piepklein Verilog-programma. Je hoeft het nog niet te snappen, we willen alleen weten of alles werkt. Maak een map `labs/week01/` en sla deze twee bestanden op.
 
-```verilog
-// FILE: week01/inverter.v
-// Een inverter: de uitgang is het omgekeerde van de ingang.
-module inverter(input a, output y);
-  assign y = ~a;
-endmodule
+```{.verilog include="week01/inverter.v"}
 ```
 
-```verilog
-// FILE: week01/tb_inverter.v
-// Een testbench: een "virtuele proefopstelling" die onze inverter test.
-module tb_inverter;
-  reg  a;
-  wire y;
-  inverter dut(.a(a), .y(y));
-
-  initial begin
-    a = 0; #1;
-    if (y !== 1) $display("FAIL: a=0 geeft y=%b", y);
-    a = 1; #1;
-    if (y !== 0) $display("FAIL: a=1 geeft y=%b", y);
-    $display("PASS: inverter werkt");
-  end
-endmodule
+```{.verilog include="week01/tb_inverter.v"}
 ```
 
 Draai in de Terminal:

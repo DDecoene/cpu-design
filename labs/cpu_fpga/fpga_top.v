@@ -1,4 +1,3 @@
-// FILE: cpu_irq/fpga_top.v
 // Het toplevel voor een FPGA-bord: klok, een resetknop, LED's en een seriële poort.
 // De LED's op veel borden zijn 'actief laag' (0 = aan), vandaar led_n.
 module fpga_top #(

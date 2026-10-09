@@ -1,4 +1,3 @@
-// FILE: week07/seqdet.v
 module seqdet(
   input  clk,
   input  rst_n,

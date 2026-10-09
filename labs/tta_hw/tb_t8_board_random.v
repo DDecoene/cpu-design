@@ -1,4 +1,3 @@
-// FILE: tta_hw/tb_t8_board_random.v
 `timescale 1ns/1ps
 `ifndef HALF
   `define HALF 500

@@ -1,4 +1,3 @@
-// FILE: week09/tb_bouwstenen.v
 module tb_bouwstenen;
   reg  [7:0] a, b;
   reg        cin;

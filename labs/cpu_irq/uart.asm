@@ -1,4 +1,3 @@
-; FILE: cpu_irq/uart.asm
 ; Verzend "HI" via de UART en lees het terug (de testbench sluit de zender aan op de ontvanger).
 ; Gebruikt polling: wachten tot de zender vrij is of er een byte is ontvangen.
         LDI  R4, 0xF0           ; UART data

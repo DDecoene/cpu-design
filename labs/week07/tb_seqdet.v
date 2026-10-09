@@ -1,4 +1,3 @@
-// FILE: week07/tb_seqdet.v
 module tb_seqdet;
   reg clk = 0, rst_n = 0, in = 0;
   wire detected;

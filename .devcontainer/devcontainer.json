@@ -2,9 +2,8 @@
   "name": "CPU Design Cursus",
   "build": { "dockerfile": "Dockerfile" },
   "remoteUser": "vscode",
-  "containerEnv": { "CHROME": "chromium", "CHROME_FLAGS": "--no-sandbox" },
-  // Na het aanmaken: de code uit src/ halen en alle labtests draaien (ongeveer een minuut)
-  "postCreateCommand": "python3 extract_labs.py",
+  // Na het aanmaken: alle labtests draaien (ongeveer een minuut)
+  "postCreateCommand": "python3 test_labs.py",
   "customizations": {
     "vscode": {
       "extensions": [

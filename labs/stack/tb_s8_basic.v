@@ -1,4 +1,3 @@
-// FILE: stack/tb_s8_basic.v
 // Test van de stackmachine met met de hand samengestelde bytes.
 module tb_s8_basic;
   reg clk = 0, rst_n = 0;

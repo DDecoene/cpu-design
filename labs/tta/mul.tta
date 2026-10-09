@@ -1,4 +1,3 @@
-; FILE: tta/mul.tta
 ; 13 x 11 door herhaald optellen. Uitvoer: 143.
         #0  -> R0           ; resultaat
         #11 -> R1           ; teller

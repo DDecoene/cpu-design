@@ -1,4 +1,3 @@
-// FILE: week12/tb_mul8.v
 module tb_mul8;
   reg clk = 0, rst_n = 0, start = 0;
   reg  [7:0] a = 0, b = 0;

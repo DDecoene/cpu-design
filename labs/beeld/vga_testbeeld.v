@@ -1,4 +1,3 @@
-// FILE: beeld/vga_testbeeld.v
 // Het eerste complete beeld: tijdbasis plus testbeeld, met uitgangsregisters.
 // Alle uitgangen worden samen een klok vertraagd, dus sync en kleur blijven uitgelijnd en er komen geen glitches op de pinnen.
 module vga_testbeeld(
